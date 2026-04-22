@@ -7,6 +7,7 @@ import {
   Badge,
   Box,
   ScrollArea,
+  Group,
 } from '@mantine/core';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NAV_ITEMS } from '@/shared/constants/navigation';
@@ -18,12 +19,14 @@ const Sidebar: React.FC = () => {
   return (
     <ScrollArea style={{ height: 'calc(100vh - 60px)' }}>
       <Box p="md">
-        <Text size="lg" fw={700} mb="lg">
-          IMS
-          <Badge size="sm" ml={8} variant="light">
+        <Group gap="xs" mb="lg" align="center">
+          <Text size="lg" fw={700} component="span">
+            IMS
+          </Text>
+          <Badge size="sm" variant="light">
             v1.0
           </Badge>
-        </Text>
+        </Group>
 
         <Divider my="lg" />
 
