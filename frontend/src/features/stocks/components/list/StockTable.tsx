@@ -20,7 +20,7 @@ export const StockTable: React.FC<StockTableProps> = ({
   onDelete,
 }) => {
   const columns = [
-    { key: 'stock_identifier', label: 'Identifier', width: '15%', align: 'center' as const },
+    { key: 'id', label: 'Entry #', width: '12%', align: 'center' as const },
     { key: 'product_name', label: 'Product', width: '20%', align: 'center' as const },
     {
       key: 'quantity_available',

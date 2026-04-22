@@ -15,7 +15,6 @@ const StockCreatePage: React.FC = () => {
 
   const form = useForm<StockFormValues>({
     initialValues: {
-      stock_identifier: '',
       product: '',
       quantity_received: 0,
       unit_cost: 0,
@@ -24,8 +23,6 @@ const StockCreatePage: React.FC = () => {
       expiration_date: '',
     },
     validate: {
-      stock_identifier: (value: string) =>
-        value.length === 0 ? 'Stock identifier is required' : null,
       product: (value: string) =>
         value.length === 0 ? 'Product is required' : null,
       quantity_received: (value: number) =>
@@ -42,7 +39,6 @@ const StockCreatePage: React.FC = () => {
   const handleSubmit = async (values: StockFormValues) => {
     try {
       await createMutation.mutateAsync({
-        stock_identifier: values.stock_identifier,
         product: parseInt(values.product, 10),
         quantity_received: values.quantity_received,
         unit_cost: values.unit_cost,

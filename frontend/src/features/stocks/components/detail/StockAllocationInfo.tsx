@@ -7,12 +7,10 @@ import type { StockEntryAllocationDetailResponse } from '../../stock.types';
 
 interface StockAllocationInfoProps {
   allocation: StockEntryAllocationDetailResponse | undefined | null;
-  isLoading?: boolean;
 }
 
 export const StockAllocationInfo: React.FC<StockAllocationInfoProps> = ({
   allocation,
-  isLoading = false,
 }) => {
   const navigate = useNavigate();
 

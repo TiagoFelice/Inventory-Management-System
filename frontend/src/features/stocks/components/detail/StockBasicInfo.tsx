@@ -17,9 +17,9 @@ export const StockBasicInfo: React.FC<StockBasicInfoProps> = ({ stock }) => {
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <div>
               <Text size="sm" c="dimmed" fw={500}>
-                Stock Identifier
+                Stock Entry
               </Text>
-              <Text fw={600}>{stock.stock_identifier}</Text>
+              <Text fw={600}>#{stock.id}</Text>
             </div>
           </Grid.Col>
 

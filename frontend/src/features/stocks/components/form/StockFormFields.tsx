@@ -1,10 +1,8 @@
 import React from 'react';
 import { NumberInput, Select, Stack, TextInput } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
 import type { UseFormReturnType } from '@mantine/form';
 
 export interface StockFormValues {
-  stock_identifier: string;
   product: string;
   quantity_received: number;
   unit_cost: number;
@@ -28,14 +26,6 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
 }) => {
   return (
     <Stack gap="md">
-      <TextInput
-        label="Stock Identifier"
-        placeholder="e.g., STOCK-2024-001"
-        {...form.getInputProps('stock_identifier')}
-        disabled={disabled}
-        required
-      />
-
       <Select
         label="Product"
         placeholder="Select a product"

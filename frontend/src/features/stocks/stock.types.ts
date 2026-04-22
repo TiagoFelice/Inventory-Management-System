@@ -1,7 +1,6 @@
 // Stock entry types
 export interface StockEntry {
   id: number;
-  stock_identifier: string;
   product: number;
   product_name?: string;
   quantity_received: number;
@@ -17,7 +16,6 @@ export interface StockEntry {
 }
 
 export interface CreateStockPayload {
-  stock_identifier: string;
   product: number;
   quantity_received: number;
   unit_cost: number;
@@ -46,7 +44,6 @@ export interface StockAllocationDetail {
 
 export interface StockEntryAllocationDetailResponse {
   stock_entry_id: number;
-  stock_identifier: string;
   quantity_received: number;
   quantity_available: number;
   quantity_allocated: number;

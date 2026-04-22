@@ -60,7 +60,7 @@ const StockDetailPage: React.FC = () => {
         <Group justify="space-between">
           <Stack gap={0}>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-              {stock.stock_identifier}
+              Stock Entry #{stock.id}
             </h1>
             <Text size="sm" c="dimmed">
               Product: {stock.product_name}

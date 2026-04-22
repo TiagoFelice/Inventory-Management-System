@@ -21,7 +21,6 @@ const StockEditPage: React.FC = () => {
 
   const form = useForm<StockFormValues>({
     initialValues: {
-      stock_identifier: '',
       product: '',
       quantity_received: 0,
       unit_cost: 0,
@@ -30,8 +29,6 @@ const StockEditPage: React.FC = () => {
       expiration_date: '',
     },
     validate: {
-      stock_identifier: (value: string) =>
-        value.length === 0 ? 'Stock identifier is required' : null,
       product: (value: string) =>
         value.length === 0 ? 'Product is required' : null,
       quantity_received: (value: number) =>
@@ -49,7 +46,6 @@ const StockEditPage: React.FC = () => {
     if (stockQuery.data) {
       const stock = stockQuery.data;
       form.setValues({
-        stock_identifier: stock.stock_identifier || '',
         product: String(stock.product) || '',
         quantity_received: stock.quantity_received || 0,
         unit_cost: stock.unit_cost || 0,
@@ -66,7 +62,6 @@ const StockEditPage: React.FC = () => {
       await updateMutation.mutateAsync({
         id: stockId,
         payload: {
-          stock_identifier: values.stock_identifier,
           product: parseInt(values.product, 10),
           quantity_received: values.quantity_received,
           unit_cost: values.unit_cost,
