@@ -51,14 +51,15 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
       <Select
         placeholder="Sort by"
         data={[
-          { value: 'expiration_date', label: 'Expiration Date' },
-          { value: '-received_at', label: 'Newest First' },
-          { value: 'received_at', label: 'Oldest First' },
-          { value: '-quantity_available', label: 'Quantity (High to Low)' },
-          { value: 'quantity_available', label: 'Quantity (Low to High)' },
+          { value: 'name_asc', label: 'Name (A to Z)' },
+          { value: 'name_desc', label: 'Name (Z to A)' },
+          { value: 'quantity_desc', label: 'Stock (High to Low)' },
+          { value: 'quantity_asc', label: 'Stock (Low to High)' },
+          { value: 'value_desc', label: 'Value (High to Low)' },
+          { value: 'value_asc', label: 'Value (Low to High)' },
         ]}
         value={ordering}
-        onChange={(val) => onOrderingChange(val || 'expiration_date')}
+        onChange={(val) => onOrderingChange(val || 'quantity_desc')}
         style={{ width: 240, flexShrink: 0 }}
       />
     </Group>

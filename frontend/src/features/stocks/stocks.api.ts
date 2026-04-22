@@ -12,6 +12,7 @@ export const stocksApi = {
     offset?: number;
     search?: string;
     ordering?: string;
+    product?: number;
   }) => {
     const cleanParams = params ? Object.fromEntries(
       Object.entries(params).filter(([, v]) => v !== undefined)

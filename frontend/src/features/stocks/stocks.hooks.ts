@@ -8,6 +8,7 @@ export const useStocks = (params?: {
   offset?: number;
   search?: string;
   ordering?: string;
+  product?: number;
 }) => {
   return useQuery({
     queryKey: queryKeys.stocks.list(params),

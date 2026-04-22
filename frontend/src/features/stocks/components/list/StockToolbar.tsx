@@ -12,10 +12,10 @@ export const StockToolbar: React.FC<StockToolbarProps> = ({
 }) => {
   return (
     <ListPageHeader
-      title="Stock Entries"
+      title="Stocks"
       itemCount={stockCount}
-      itemLabel="stock entr"
-      actionLabel="Add Stock"
+      itemLabel="product"
+      actionLabel="Add Stock Entry"
       onAction={onCreate}
     />
   );

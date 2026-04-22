@@ -1,10 +1,9 @@
 import React from 'react';
-import { ActionIcon, Group, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Group, Tooltip } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { DataTable } from '@components/ui/DataTable';
 import { ListTableCard } from '@components/ui/ListTableCard';
 import type { Product } from '../../product.types';
-import { ProductStatusBadge } from '../detail/ProductStatusBadge';
 
 interface ProductTableProps {
   products: Product[];
@@ -30,12 +29,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       render: (value: number, row: Product) => `${value} ${row.base_unit}`,
     },
     {
-      key: 'status',
+      key: 'is_active',
       label: 'Status',
       width: '20%',
       align: 'center' as const,
-      render: (_value: unknown, row: Product) => (
-        <ProductStatusBadge quantityInStock={row.available_quantity} />
+      render: (value: boolean) => (
+        <Badge color={value ? 'green' : 'gray'} variant="light">
+          {value ? 'Active' : 'Inactive'}
+        </Badge>
       ),
     },
   ];

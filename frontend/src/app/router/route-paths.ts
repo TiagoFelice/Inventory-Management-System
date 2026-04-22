@@ -7,6 +7,7 @@ export const ROUTES = {
   productDetail: (id: number | string) => `/products/${id}`,
   productEdit: (id: number | string) => `/products/${id}/edit`,
   stockEntries: '/stock-entries',
+  stockDetail: (id: number | string) => `/stock-details/${id}`,
   stockEntryNew: '/stock-entries/new',
   stockEntryDetail: (id: number | string) => `/stock-entries/${id}`,
   stockEntryEdit: (id: number | string) => `/stock-entries/${id}/edit`,

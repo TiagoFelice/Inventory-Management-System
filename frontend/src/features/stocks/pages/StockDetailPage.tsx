@@ -1,111 +1,112 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Stack,
-  Group,
-  Button,
-  Text,
-  ActionIcon,
-  Tooltip,
-} from '@mantine/core';
-import { IconPencil, IconTrash } from '@tabler/icons-react';
-import { useStockEntry, useStockEntryAllocationDetail, useDeleteStockEntry } from '@features/stocks/stocks.hooks';
-import { LoadingState } from '@components/ui/LoadingState';
+import React from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Badge, Button, Container, Grid, Group, Paper, Stack, Text } from '@mantine/core';
+import { ROUTES } from '@/app/router/route-paths';
 import { ErrorState } from '@components/ui/ErrorState';
-import { StockBasicInfo } from '../components/detail/StockBasicInfo';
-import { StockAllocationInfo } from '../components/detail/StockAllocationInfo';
-import { StockDeleteConfirmationModal } from '../components/detail/StockDeleteConfirmationModal';
+import { LoadingState } from '@components/ui/LoadingState';
+import { formatCurrency, formatNumber } from '@shared/utils/formatting';
+import { useProduct } from '@/features/products/products.hooks';
+import { useStocks } from '../stocks.hooks';
+import { StockEntriesByProductCard } from '../components/detail/StockEntriesByProductCard';
 
-const StockDetailPage: React.FC = () => {
+const StockMetric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <Stack gap={4}>
+    <Text size="sm" c="dimmed" fw={500}>
+      {label}
+    </Text>
+    <Text fw={700} size="lg">
+      {value}
+    </Text>
+  </Stack>
+);
+
+const StockDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const stockId = id ? parseInt(id, 10) : null;
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const productId = id ? parseInt(id, 10) : null;
 
-  const stockQuery = useStockEntry(stockId);
-  const allocationQuery = useStockEntryAllocationDetail(stockId);
-  const deleteMutation = useDeleteStockEntry();
+  const productQuery = useProduct(productId);
+  const stockEntriesQuery = useStocks({
+    product: productId || undefined,
+    ordering: '-received_at',
+  });
 
-  const handleDelete = async () => {
-    if (stockId) {
-      try {
-        await deleteMutation.mutateAsync(stockId);
-        navigate('/stock-entries');
-      } catch (error) {
-        console.error('Delete failed:', error);
-      }
-    }
-  };
-
-  if (stockQuery.isLoading || allocationQuery.isLoading) {
-    return <LoadingState message="Loading stock entry..." />;
+  if (productQuery.isLoading || stockEntriesQuery.isLoading) {
+    return <LoadingState message="Loading stock details..." />;
   }
 
-  if (stockQuery.isError || !stockQuery.data) {
+  if (productQuery.isError || stockEntriesQuery.isError || !productQuery.data) {
     return (
       <ErrorState
-        message="Failed to load stock entry"
-        onRetry={() => stockQuery.refetch()}
+        message="Failed to load stock details"
+        onRetry={() => {
+          productQuery.refetch();
+          stockEntriesQuery.refetch();
+        }}
       />
     );
   }
 
-  const stock = stockQuery.data;
-  const allocation = allocationQuery.data;
+  const product = productQuery.data;
+  const entries = stockEntriesQuery.data?.results || [];
 
   return (
     <Container size="lg" py="xl">
       <Stack gap="lg">
-        <Group justify="space-between">
+        <Group justify="space-between" align="flex-start">
           <Stack gap={0}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-              Stock Entry #{stock.id}
-            </h1>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Stock Details</h1>
             <Text size="sm" c="dimmed">
-              Product: {stock.product_name}
+              {product.name} ({product.sku})
             </Text>
           </Stack>
           <Group>
-            <Tooltip label="Edit stock entry">
-              <ActionIcon
-                size="lg"
-                variant="light"
-                color="blue"
-                onClick={() => navigate(`/stock-entries/${stock.id}/edit`)}
-              >
-                <IconPencil size={20} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Delete stock entry">
-              <ActionIcon
-                size="lg"
-                variant="light"
-                color="red"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <IconTrash size={20} />
-              </ActionIcon>
-            </Tooltip>
-            <Button variant="light" onClick={() => navigate('/stock-entries')}>
+            <Button variant="light" onClick={() => navigate(ROUTES.stockEntryNew)}>
+              Add Stock Entry
+            </Button>
+            <Button variant="light" onClick={() => navigate(ROUTES.stockEntries)}>
               Back
             </Button>
           </Group>
         </Group>
 
-        <StockBasicInfo stock={stock} />
+        <Paper p="lg" radius="md" withBorder>
+          <Stack gap="lg">
+            <Group justify="space-between">
+              <Stack gap={0}>
+                <Text fw={700} size="lg">
+                  Product Stock Summary
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Current inventory position for this product
+                </Text>
+              </Stack>
+            </Group>
 
-        <StockAllocationInfo allocation={allocation} />
+            <Grid>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <StockMetric
+                  label="Quantity In Stock"
+                  value={formatNumber(product.available_quantity, product.base_unit === 'unit' ? 0 : 2)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <StockMetric
+                  label="Inventory Value"
+                  value={formatCurrency(product.total_inventory_value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <StockMetric label="Stock Entries" value={String(entries.length)} />
+              </Grid.Col>
+            </Grid>
+          </Stack>
+        </Paper>
 
-        <StockDeleteConfirmationModal
-          opened={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleDelete}
-          isLoading={deleteMutation.isPending}
-        />
+        <StockEntriesByProductCard entries={entries} />
       </Stack>
     </Container>
   );
 };
 
-export default StockDetailPage;
+export default StockDetailsPage;

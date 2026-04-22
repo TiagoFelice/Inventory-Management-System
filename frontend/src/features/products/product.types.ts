@@ -8,6 +8,7 @@ export interface Product {
   sku: string;
   base_unit: ProductUnit;
   amount: number;
+  is_active: boolean;
   available_quantity: number;
   total_inventory_value: number;
   created_at: string;

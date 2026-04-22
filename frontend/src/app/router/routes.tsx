@@ -17,6 +17,7 @@ const ProductEditPage = React.lazy(() =>
   import('@features/products/pages/ProductEditPage')
 );
 const StocksPage = React.lazy(() => import('@features/stocks/pages/StocksPage'));
+const StockDetailsPage = React.lazy(() => import('@/features/stocks/pages/StockDetailPage'));
 const StockCreatePage = React.lazy(() =>
   import('@features/stocks/pages/StockCreatePage')
 );
@@ -96,6 +97,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.stockEntries,
         element: <StocksPage />,
+      },
+      {
+        path: '/stock-details/:id',
+        element: <StockDetailsPage />,
       },
       {
         path: ROUTES.stockEntryNew,

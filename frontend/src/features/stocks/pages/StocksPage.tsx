@@ -1,65 +1,70 @@
-import React, { useState } from 'react';
-import { Modal, Stack, Text, Group, Button } from '@mantine/core';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStocks, useDeleteStockEntry } from '@features/stocks/stocks.hooks';
+import { ROUTES } from '@/app/router/route-paths';
+import { useProducts } from '@/features/products/products.hooks';
+import type { Product } from '@/features/products/product.types';
 import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
 import { EmptyState } from '@components/ui/EmptyState';
 import { ListPageLayout } from '@components/ui/ListPageLayout';
 import { StockToolbar } from '../components/list/StockToolbar';
 import { StockFilters } from '../components/list/StockFilters';
-import { StockTable } from '../components/list/StockTable';
-import type { StockEntry } from '../stock.types';
+import { StockProductsTable } from '../components/list/StockProductsTable';
 
 const StocksPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [ordering, setOrdering] = useState('expiration_date');
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; stockId: number | null }>({
-    isOpen: false,
-    stockId: null,
-  });
+  const [ordering, setOrdering] = useState('quantity_desc');
 
-  const query = useStocks({
+  const query = useProducts({
     search: search || undefined,
-    ordering: ordering,
   });
 
-  const deleteMutation = useDeleteStockEntry();
+  const products = query.data?.results || [];
+  const sortedProducts = useMemo(() => {
+    const items = products.filter((product: Product) => Number(product.available_quantity) > 0);
 
-  const handleDeleteConfirm = async () => {
-    if (deleteModal.stockId) {
-      try {
-        await deleteMutation.mutateAsync(deleteModal.stockId);
-        setDeleteModal({ isOpen: false, stockId: null });
-      } catch (error) {
-        console.error('Delete failed:', error);
+    items.sort((a: Product, b: Product) => {
+      switch (ordering) {
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        case 'name_desc':
+          return b.name.localeCompare(a.name);
+        case 'quantity_asc':
+          return Number(a.available_quantity) - Number(b.available_quantity);
+        case 'value_asc':
+          return Number(a.total_inventory_value) - Number(b.total_inventory_value);
+        case 'value_desc':
+          return Number(b.total_inventory_value) - Number(a.total_inventory_value);
+        case 'quantity_desc':
+        default:
+          return Number(b.available_quantity) - Number(a.available_quantity);
       }
-    }
-  };
+    });
+
+    return items;
+  }, [ordering, products]);
 
   if (query.isLoading) {
-    return <LoadingState message="Loading stock entries..." />;
+    return <LoadingState message="Loading product stock..." />;
   }
 
   if (query.isError) {
     return (
       <ErrorState
-        message="Failed to load stock entries"
+        message="Failed to load product stock"
         onRetry={() => query.refetch()}
       />
     );
   }
 
-  const stocks = query.data?.results || [];
-
   return (
     <ListPageLayout
       header={
         <StockToolbar
-          stockCount={stocks.length}
-          onCreate={() => navigate('/stock-entries/new')}
+          stockCount={sortedProducts.length}
+          onCreate={() => navigate(ROUTES.stockEntryNew)}
         />
       }
       filters={
@@ -76,54 +81,24 @@ const StocksPage: React.FC = () => {
         />
       }
     >
-      {stocks.length === 0 && !search ? (
+      {sortedProducts.length === 0 && !search ? (
         <EmptyState
-          title="No Stock Entries"
-          description="Start by adding your first stock entry"
-          actionLabel="Add Stock"
-          onAction={() => navigate('/stock-entries/new')}
+          title="No Stocked Products"
+          description="Start by adding a stock entry to put inventory into a product."
+          actionLabel="Add Stock Entry"
+          onAction={() => navigate(ROUTES.stockEntryNew)}
         />
-      ) : stocks.length === 0 ? (
+      ) : sortedProducts.length === 0 ? (
         <EmptyState
           title="No Results"
-          description={`No stock entries found matching "${search}"`}
+          description={`No products found matching "${search}"`}
         />
       ) : (
-        <StockTable
-          stocks={stocks}
-          onRowClick={(stock: StockEntry) => navigate(`/stock-entries/${stock.id}`)}
-          onEdit={(stock: StockEntry) => navigate(`/stock-entries/${stock.id}/edit`)}
-          onDelete={(stock: StockEntry) =>
-            setDeleteModal({ isOpen: true, stockId: stock.id })
-          }
+        <StockProductsTable
+          products={sortedProducts}
+          onRowClick={(product: Product) => navigate(ROUTES.stockDetail(product.id))}
         />
       )}
-
-      <Modal
-        opened={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, stockId: null })}
-        title="Delete Stock Entry"
-        centered
-      >
-        <Stack>
-          <Text>Are you sure you want to delete this stock entry? This action cannot be undone.</Text>
-          <Group justify="flex-end">
-            <Button
-              variant="light"
-              onClick={() => setDeleteModal({ isOpen: false, stockId: null })}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="red"
-              loading={deleteMutation.isPending}
-              onClick={handleDeleteConfirm}
-            >
-              Delete
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </ListPageLayout>
   );
 };
