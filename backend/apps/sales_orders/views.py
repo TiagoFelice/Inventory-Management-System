@@ -116,7 +116,7 @@ class SalesOrderViewSet(UserFilteredViewSet):
                 
                 if stock_entry.quantity_available < quantity:
                     raise ValueError(
-                        f'Insufficient stock for {stock_entry.stock_identifier}. '
+                        f'Insufficient stock for stock entry #{stock_entry.id}. '
                         f'Available: {stock_entry.quantity_available}, Required: {quantity}'
                     )
                 

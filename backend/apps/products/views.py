@@ -22,7 +22,7 @@ class ProductViewSet(UserFilteredViewSet):
     def stock_summary(self, request, pk=None):
         """Get stock summary for a product."""
         product = self.get_object()
-        stock_entries = product.stock_entries.values('stock_identifier').annotate(
+        stock_entries = product.stock_entries.values('id').annotate(
             available=F('quantity_available'),
             cost=F('unit_cost')
         )

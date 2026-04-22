@@ -10,7 +10,7 @@ class StockEntryViewSet(UserFilteredViewSet):
     """API endpoint for managing stock entries."""
     queryset = StockEntry.objects.select_related('product', 'user')
     serializer_class = StockEntrySerializer
-    search_fields = ['stock_identifier', 'product__sku']
+    search_fields = ['product__sku', 'product__name']
     ordering_fields = ['received_at', 'expiration_date', 'quantity_available']
     ordering = ['expiration_date', 'received_at']
     
@@ -23,7 +23,6 @@ class StockEntryViewSet(UserFilteredViewSet):
         from apps.sales_orders.serializers import StockAllocationSerializer
         return Response({
             'stock_entry_id': entry.id,
-            'stock_identifier': entry.stock_identifier,
             'quantity_received': entry.quantity_received,
             'quantity_available': entry.quantity_available,
             'quantity_allocated': entry.quantity_sold,

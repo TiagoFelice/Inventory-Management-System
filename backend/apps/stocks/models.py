@@ -8,8 +8,8 @@ from apps.products.models import Product
 class StockEntry(models.Model):
     """
     Stock entry - represents a unique stock lot/batch.
-    
-    Each stock entry has a unique identifier and traceable cost basis.
+
+    Each stock entry has a traceable cost basis.
     This is critical for accurate profit calculation and stock traceability.
     
     source_type: 'manual' or 'purchase_order'
@@ -29,7 +29,6 @@ class StockEntry(models.Model):
         on_delete=models.PROTECT,
         related_name='stock_entries'
     )
-    stock_identifier = models.CharField(max_length=255, unique=True)
     source_type = models.CharField(max_length=20, choices=SOURCE_TYPE_CHOICES)
     source_reference_id = models.IntegerField(blank=True, null=True)
     quantity_received = models.DecimalField(
@@ -62,15 +61,11 @@ class StockEntry(models.Model):
         db_table = 'stock_entries'
         indexes = [
             models.Index(fields=['user', 'product']),
-            models.Index(fields=['stock_identifier']),
             models.Index(fields=['received_at']),
-        ]
-        constraints = [
-            models.UniqueConstraint(fields=['stock_identifier'], name='unique_stock_identifier'),
         ]
     
     def __str__(self):
-        return f"{self.stock_identifier} - {self.quantity_available} available"
+        return f"Stock Entry #{self.pk} - {self.quantity_available} available"
     
     def save(self, *args, **kwargs):
         """Validate and automatically calculate total_cost if needed."""

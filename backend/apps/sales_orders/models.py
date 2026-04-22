@@ -182,7 +182,7 @@ class StockAllocation(models.Model):
         ]
     
     def __str__(self):
-        return f"Allocation: {self.stock_entry.stock_identifier} -> {self.sales_order_item.sales_order.order_number}"
+        return f"Allocation: Stock Entry #{self.stock_entry_id} -> {self.sales_order_item.sales_order.order_number}"
     
     def save(self, *args, **kwargs):
         """Reduce available quantity in stock entry on creation."""

@@ -135,7 +135,6 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
                 stock_entry = StockEntry.objects.create(
                     user=request.user,
                     product=po_item.product,
-                    stock_identifier=f"PO-{po.id}-ITEM-{po_item.id}",
                     source_type='purchase_order',
                     source_reference_id=po_item.id,
                     quantity_received=po_item.quantity,
