@@ -38,6 +38,12 @@ class StockEntrySerializer(serializers.ModelSerializer):
             .first()
         )
         return po_item.purchase_order.order_number if po_item else None
+
+    def create(self, validated_data):
+        # Manual entries start fully available when first received.
+        if 'quantity_available' not in validated_data:
+            validated_data['quantity_available'] = validated_data['quantity_received']
+        return super().create(validated_data)
     
     class Meta:
         model = StockEntry
@@ -49,7 +55,7 @@ class StockEntrySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'user', 'quantity_sold', 'total_cost',
+            'id', 'user', 'quantity_available', 'quantity_sold', 'total_cost',
             'purchase_order_id', 'purchase_order_number',
             'created_at', 'updated_at'
         ]
