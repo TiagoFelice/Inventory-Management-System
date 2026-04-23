@@ -14,6 +14,7 @@ class StockAllocationSerializer(serializers.ModelSerializer):
 
 
 class SalesOrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
     total_cost = serializers.DecimalField(
         read_only=True,
         max_digits=15,
@@ -34,7 +35,7 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesOrderItem
         fields = [
-            'id', 'sales_order', 'product', 'quantity', 'unit_price',
+            'id', 'sales_order', 'product', 'product_name', 'quantity', 'unit_price',
             'total_revenue', 'total_cost', 'profit', 'margin_percent',
             'allocations', 'created_at', 'updated_at'
         ]

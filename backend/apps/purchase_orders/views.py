@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from decimal import Decimal
 
 from apps.users.views import UserFilteredViewSet
 from apps.stocks.models import StockEntry
@@ -44,6 +45,29 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
         if self.action in ('create', 'update', 'partial_update'):
             return PurchaseOrderCreateUpdateSerializer
         return PurchaseOrderSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        """Require manual stock-entry planning before moving an order to received."""
+        instance = self.get_object()
+        payload = request.data.copy()
+        target_status = payload.pop('status', None)
+
+        if target_status == 'received':
+            return Response(
+                {'detail': 'Use receive_with_entries to mark a purchase order as received.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(instance, data=payload, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if target_status and target_status != instance.status:
+            instance.status = target_status
+            instance.save()
+
+        instance.refresh_from_db()
+        return Response(PurchaseOrderSerializer(instance).data, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
@@ -104,7 +128,7 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
         
     @action(detail=True, methods=['post'])
     def receive(self, request, pk=None):
-        """Mark purchase order as received and create stock entries from its items."""
+        """Manual stock entries are required before receiving a purchase order."""
         po = self.get_object()
         
         if po.status == 'received':
@@ -113,38 +137,83 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if po.status != 'confirmed':
+        return Response(
+            {'detail': 'Use receive_with_entries to mark a purchase order as received.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @action(detail=True, methods=['post'])
+    def receive_with_entries(self, request, pk=None):
+        """Mark purchase order as received using explicit stock-entry splits per item."""
+        po = self.get_object()
+
+        if po.status == 'received':
             return Response(
-                {'error': 'Only confirmed purchase orders can be received'},
+                {'error': 'Purchase order already received'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         po_items = list(po.items.select_related('product').order_by('id'))
+        if not po_items:
+            return Response(
+                {'error': 'Purchase order has no items to receive'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        entries_data = request.data.get('entries', [])
+        if not entries_data:
+            return Response(
+                {'error': 'Entries are required to receive this purchase order'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         created_entries = []
-        
+
         try:
-            if not po_items:
-                return Response(
-                    {'error': 'Purchase order has no items to receive'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            expected_item_ids = {item.id for item in po_items}
+            provided_item_ids = {
+                entry['purchase_order_item_id']
+                for entry in entries_data
+                if entry.get('quantity_received')
+            }
+
+            if expected_item_ids != provided_item_ids:
+                raise ValueError('Each purchase order item must be fully received before completing this action')
 
             received_at = timezone.now()
 
-            for po_item in po_items:
+            for entry_data in entries_data:
+                po_item = PurchaseOrderItem.objects.get(
+                    id=entry_data['purchase_order_item_id'],
+                    purchase_order=po
+                )
+
+                quantity_received = Decimal(str(entry_data['quantity_received']))
                 stock_entry = StockEntry.objects.create(
                     user=request.user,
                     product=po_item.product,
                     source_type='purchase_order',
                     source_reference_id=po_item.id,
-                    quantity_received=po_item.quantity,
-                    quantity_available=po_item.quantity,
+                    quantity_received=quantity_received,
+                    quantity_available=quantity_received,
                     unit_cost=po_item.unit_cost,
-                    total_cost=po_item.quantity * po_item.unit_cost,
+                    total_cost=quantity_received * po_item.unit_cost,
                     received_at=received_at,
+                    expiration_date=entry_data.get('expiration_date') or None,
                     notes=f"Auto-created from purchase order {po.order_number}",
                 )
                 created_entries.append(stock_entry)
+
+            for po_item in po_items:
+                received_total = sum(
+                    entry.quantity_received
+                    for entry in created_entries
+                    if entry.source_reference_id == po_item.id
+                )
+                if received_total != po_item.quantity:
+                    raise ValueError(
+                        f'Entries for product {po_item.product.sku} must total {po_item.quantity}'
+                    )
             
             po.status = 'received'
             po.save()
