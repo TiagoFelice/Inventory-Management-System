@@ -22,11 +22,11 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
 
   const columns = [
     {
-      key: 'id',
-      label: 'Entry #',
+      key: 'stock_identifier',
+      label: 'Stock Identifier',
       width: '12%',
       align: 'center' as const,
-      render: (_value: number, _row: StockEntry, index: number) => index + 1,
+      render: (value: number | string) => <strong>{value}</strong>,
     },
     {
       key: 'source_type',

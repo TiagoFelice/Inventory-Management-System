@@ -22,7 +22,7 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
   return (
     <Group align="flex-end" style={{ width: '100%' }} wrap="nowrap">
       <TextInput
-        placeholder="Search by product name or SKU..."
+        placeholder="Search by product name, SKU, or stock identifier..."
         leftSection={<IconSearch size={16} />}
         rightSection={
           searchInput ? (
