@@ -11,11 +11,11 @@ import { useDeleteStockEntry, useStocks } from '../stocks.hooks';
 import { StockEntriesByProductCard } from '../components/list/StockEntriesByProductCard';
 
 const StockMetric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <Stack gap={4}>
+  <Stack gap={4} align="center">
     <Text size="sm" c="dimmed" fw={500}>
       {label}
     </Text>
-    <Text fw={700} size="lg">
+    <Text fw={700} size="lg" ta="center">
       {value}
     </Text>
   </Stack>
@@ -97,9 +97,9 @@ const StockDetailsPage: React.FC = () => {
                 <Text fw={700} size="lg">
                   Product Stock Summary
                 </Text>
-                <Text size="sm" c="dimmed">
+                {/* <Text size="sm" c="dimmed">
                   Current inventory position for this product
-                </Text>
+                </Text> */}
               </Stack>
             </Group>
 
