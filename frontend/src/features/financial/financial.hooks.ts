@@ -1,35 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query/keys';
 import { financeApi } from './financial.api';
-import type { FinancialQueryParams } from './financial.types';
+import type {
+  FinancialPerspective,
+  FinancialPerspectiveItem,
+  FinancialQueryParams,
+} from './financial.types';
 
-export const useFinancialSummary = (params?: FinancialQueryParams) => {
-  return useQuery({
-    queryKey: queryKeys.financial.summary(params),
-    queryFn: async () => {
-      const response = await financeApi.getSummary(params);
-      return response.data;
-    },
-  });
-};
-
-export const useProductBreakdown = (params?: FinancialQueryParams) => {
-  return useQuery({
-    queryKey: queryKeys.financial.products(params),
-    queryFn: async () => {
-      const response = await financeApi.getProductBreakdown(params);
-      return response.data;
-    },
-  });
-};
-
-export const useRevenueTrend = (
-  params?: FinancialQueryParams & { period?: 'day' | 'week' | 'month' }
+export const useFinancialPerspectiveData = <TItem extends FinancialPerspectiveItem>(
+  perspective: FinancialPerspective,
+  params?: FinancialQueryParams,
+  enabled = true
 ) => {
   return useQuery({
-    queryKey: queryKeys.financial.revenueTrend(params),
+    queryKey: queryKeys.financial.perspective(perspective, params),
+    enabled,
     queryFn: async () => {
-      const response = await financeApi.getRevenueTrend(params);
+      const response = await financeApi.getPerspectiveData<TItem>(perspective, params);
       return response.data;
     },
   });

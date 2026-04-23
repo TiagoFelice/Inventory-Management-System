@@ -1,29 +1,29 @@
 import { apiClient } from '@/lib/api/client';
 import type {
-  FinancialSummary,
+  FinancialPerspective,
+  FinancialPerspectiveItem,
+  FinancialPerspectiveResponse,
   FinancialQueryParams,
-  ProductFinancial,
 } from './financial.types';
 
+const perspectivePathMap: Record<FinancialPerspective, string> = {
+  products: '/finance/products/',
+  'purchase-items': '/finance/purchase-items/',
+};
+
 export const financeApi = {
-  getSummary: (params?: FinancialQueryParams) => {
-    const cleanParams = params ? Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined)
-    ) : {};
-    return apiClient.get<FinancialSummary>('/finance/summary/', { params: cleanParams });
-  },
-
-  getProductBreakdown: (params?: FinancialQueryParams) => {
-    const cleanParams = params ? Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined)
-    ) : {};
-    return apiClient.get<ProductFinancial[]>('/finance/products/', { params: cleanParams });
-  },
-
-  getRevenueTrend: (params?: FinancialQueryParams & { period?: 'day' | 'week' | 'month' }) => {
-    const cleanParams = params ? Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined)
-    ) : {};
-    return apiClient.get<Array<any>>('/finance/revenue-trend/', { params: cleanParams });
+  getPerspectiveData: <TItem extends FinancialPerspectiveItem>(
+    perspective: FinancialPerspective,
+    params?: FinancialQueryParams
+  ) => {
+    const requestParams = Object.fromEntries(
+      Object.entries({
+        ...params,
+        ids: params?.ids && params.ids.length > 0 ? params.ids.join(',') : undefined,
+      }).filter(([, value]) => value !== undefined && value !== '')
+    );
+    return apiClient.get<FinancialPerspectiveResponse<TItem>>(perspectivePathMap[perspective], {
+      params: requestParams,
+    });
   },
 };

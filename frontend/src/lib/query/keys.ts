@@ -28,9 +28,7 @@ export const queryKeys = {
   },
   financial: {
     all: ['financial'] as const,
-    summary: (params?: unknown) => ['financial', 'summary', params] as const,
-    products: (params?: unknown) => ['financial', 'products', params] as const,
-    revenueTrend: (params?: unknown) =>
-      ['financial', 'revenue-trend', params] as const,
+    perspective: (perspective: string, params?: unknown) =>
+      ['financial', perspective, params] as const,
   },
 };
