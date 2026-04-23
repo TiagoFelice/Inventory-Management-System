@@ -1,0 +1,6 @@
+{
+  "builder": "dockerfile",
+  "context": "backend",
+  "dockerfilePath": "backend/Dockerfile"
+}
+

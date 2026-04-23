@@ -1,0 +1,10 @@
+backend
+.git
+.github
+.vscode
+docker-compose.yml
+Dockerfile
+DEPLOY_RAILWAY_VERCEL.md
+**/__pycache__
+**/*.pyc
+**/node_modules
