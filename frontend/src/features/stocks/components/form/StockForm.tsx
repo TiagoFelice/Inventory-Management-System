@@ -14,6 +14,7 @@ interface StockFormProps {
   cancelLabel?: string;
   productOptions: Array<{ value: string; label: string }>;
   isLoadingProducts?: boolean;
+  showSourceType?: boolean;
   onSubmit: (values: StockFormValues) => void | Promise<void>;
   onCancel: () => void;
 }
@@ -26,6 +27,7 @@ export const StockForm: React.FC<StockFormProps> = ({
   cancelLabel = 'Cancel',
   productOptions,
   isLoadingProducts = false,
+  showSourceType = true,
   onSubmit,
   onCancel,
 }) => {
@@ -44,6 +46,7 @@ export const StockForm: React.FC<StockFormProps> = ({
             productOptions={productOptions}
             isLoadingProducts={isLoadingProducts}
             disabled={isSubmitting}
+            showSourceType={showSourceType}
           />
 
           <Group justify="flex-end" pt="xl">

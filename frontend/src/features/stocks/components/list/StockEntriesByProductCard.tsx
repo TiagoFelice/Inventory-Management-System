@@ -36,9 +36,9 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
       render: (value: string, row: StockEntry) => (
         <Stack gap={4} align="center">
           {value === 'manual' ? (
-            <Badge color="gray" variant="light" size="sm">
+            <Text size="sm" fw={600} c="dimmed">
               Manual Entry
-            </Badge>
+            </Text>
           ) : null}
           {value === 'purchase_order' && row.purchase_order_id ? (
             <Anchor

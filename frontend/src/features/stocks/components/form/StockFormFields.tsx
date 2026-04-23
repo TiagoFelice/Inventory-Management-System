@@ -16,6 +16,7 @@ interface StockFormFieldsProps {
   productOptions: Array<{ value: string; label: string }>;
   isLoadingProducts?: boolean;
   disabled?: boolean;
+  showSourceType?: boolean;
 }
 
 export const StockFormFields: React.FC<StockFormFieldsProps> = ({
@@ -23,6 +24,7 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
   productOptions,
   isLoadingProducts = false,
   disabled = false,
+  showSourceType = true,
 }) => {
   return (
     <Stack gap="md">
@@ -36,17 +38,19 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
         required
       />
 
-      <Select
-        label="Source Type"
-        placeholder="Select source type"
-        data={[
-          { value: 'manual', label: 'Manual Entry' },
-          { value: 'purchase_order', label: 'Purchase Order' },
-        ]}
-        {...form.getInputProps('source_type')}
-        disabled={disabled}
-        required
-      />
+      {showSourceType ? (
+        <Select
+          label="Source Type"
+          placeholder="Select source type"
+          data={[
+            { value: 'manual', label: 'Manual Entry' },
+            { value: 'purchase_order', label: 'Purchase Order' },
+          ]}
+          {...form.getInputProps('source_type')}
+          disabled={disabled}
+          required
+        />
+      ) : null}
 
       <NumberInput
         label="Quantity Received"

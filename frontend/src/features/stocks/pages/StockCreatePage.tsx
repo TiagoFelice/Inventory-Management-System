@@ -29,8 +29,6 @@ const StockCreatePage: React.FC = () => {
         value <= 0 ? 'Quantity must be greater than 0' : null,
       unit_cost: (value: number) =>
         value < 0 ? 'Unit cost cannot be negative' : null,
-      source_type: (value: string) =>
-        value.length === 0 ? 'Source type is required' : null,
       received_at: (value: string) =>
         value.length === 0 ? 'Received date is required' : null,
     },
@@ -42,7 +40,7 @@ const StockCreatePage: React.FC = () => {
         product: parseInt(values.product, 10),
         quantity_received: values.quantity_received,
         unit_cost: values.unit_cost,
-        source_type: values.source_type as any,
+        source_type: 'manual',
         received_at: values.received_at,
         expiration_date: values.expiration_date || undefined,
       });
@@ -71,6 +69,7 @@ const StockCreatePage: React.FC = () => {
           cancelLabel="Cancel"
           productOptions={productOptions}
           isLoadingProducts={productsQuery.isLoading}
+          showSourceType={false}
           onSubmit={handleSubmit}
           onCancel={() => navigate('/stock-entries')}
         />
