@@ -11,7 +11,7 @@ interface FinancialSummaryCardsProps {
   summary: FinancialSummary;
   isSticky: boolean;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   isRefreshing?: boolean;
 }
 
@@ -26,6 +26,36 @@ const formatMetricValue = (
   return formatter(value);
 };
 
+const toSafeNumber = (value: number | string | null | undefined): number => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+};
+
+const getBalance = (
+  revenue: number | string | null | undefined,
+  purchaseCost: number | string | null | undefined
+): number => {
+  return toSafeNumber(revenue) - toSafeNumber(purchaseCost);
+};
+
+const getSignedMetricColor = (value: number): string => {
+  return value >= 0 ? 'green.7' : 'red.7';
+};
+
+const getSignedMetricBorderColor = (value: number): string => {
+  return value >= 0
+    ? 'var(--mantine-color-green-2)'
+    : 'var(--mantine-color-red-2)';
+};
+
 export const FinancialSummaryCards: React.FC<FinancialSummaryCardsProps> = ({
   summary,
   isSticky,
@@ -33,15 +63,63 @@ export const FinancialSummaryCards: React.FC<FinancialSummaryCardsProps> = ({
   subtitle,
   isRefreshing = false,
 }) => {
+  const balance = getBalance(summary.total_revenue, summary.total_purchase_cost);
+
   const cards = [
-    { label: 'Revenue', value: formatMetricValue(summary.total_revenue, formatCurrency) },
-    { label: 'Purchase Cost', value: formatMetricValue(summary.total_purchase_cost, formatCurrency) },
-    { label: 'COGS', value: formatMetricValue(summary.total_cogs, formatCurrency) },
-    { label: 'Profit', value: formatMetricValue(summary.profit, formatCurrency) },
-    { label: 'Margin', value: formatMetricValue(summary.profit_margin, formatPercentage) },
-    { label: 'Qty Purchased', value: formatMetricValue(summary.quantity_purchased, (value) => formatNumber(value, 4)) },
-    { label: 'Qty Sold', value: formatMetricValue(summary.quantity_sold, (value) => formatNumber(value, 4)) },
-    { label: 'Qty Remaining', value: formatMetricValue(summary.quantity_remaining, (value) => formatNumber(value, 4)) },
+    {
+      label: 'Revenue',
+      value: formatMetricValue(summary.total_revenue, formatCurrency),
+      color: 'teal.7',
+      borderColor: 'var(--mantine-color-teal-2)',
+    },
+    {
+      label: 'Purchase Cost',
+      value: formatMetricValue(summary.total_purchase_cost, formatCurrency),
+      color: undefined,
+      borderColor: undefined,
+    },
+    {
+      label: 'COGS',
+      value: formatMetricValue(summary.total_cogs, formatCurrency),
+      color: undefined,
+      borderColor: undefined,
+    },
+    {
+      label: 'Profit',
+      value: formatMetricValue(summary.profit, formatCurrency),
+      color: toSafeNumber(summary.profit) >= 0 ? 'green.7' : 'red.7',
+      borderColor:
+        toSafeNumber(summary.profit) >= 0
+          ? 'var(--mantine-color-green-2)'
+          : 'var(--mantine-color-red-2)',
+    },
+    {
+      label: 'Margin',
+      value: formatMetricValue(summary.profit_margin, formatPercentage),
+      color: toSafeNumber(summary.profit_margin) >= 0 ? 'green.7' : 'red.7',
+      borderColor:
+        toSafeNumber(summary.profit_margin) >= 0
+          ? 'var(--mantine-color-green-2)'
+          : 'var(--mantine-color-red-2)',
+    },
+    {
+      label: 'Qty Purchased',
+      value: formatMetricValue(summary.quantity_purchased, (value) => formatNumber(value, 4)),
+      color: undefined,
+      borderColor: undefined,
+    },
+    {
+      label: 'Qty Sold',
+      value: formatMetricValue(summary.quantity_sold, (value) => formatNumber(value, 4)),
+      color: undefined,
+      borderColor: undefined,
+    },
+    {
+      label: 'Balance',
+      value: formatCurrency(balance),
+      color: getSignedMetricColor(balance),
+      borderColor: getSignedMetricBorderColor(balance),
+    },
   ];
 
   return (
@@ -65,9 +143,11 @@ export const FinancialSummaryCards: React.FC<FinancialSummaryCardsProps> = ({
           <Text fw={700} size="lg">
             {title}
           </Text>
-          <Text size="sm" c="dimmed">
-            {subtitle}
-          </Text>
+          {subtitle ? (
+            <Text size="sm" c="dimmed">
+              {subtitle}
+            </Text>
+          ) : null}
           {isRefreshing ? (
             <Text size="xs" c="dimmed">
               Refreshing selection summary...
@@ -77,12 +157,18 @@ export const FinancialSummaryCards: React.FC<FinancialSummaryCardsProps> = ({
 
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
           {cards.map((card) => (
-            <Paper key={card.label} withBorder radius="md" p="md">
+            <Paper
+              key={card.label}
+              withBorder
+              radius="md"
+              p="md"
+              style={card.borderColor ? { borderColor: card.borderColor } : undefined}
+            >
               <Stack gap={4}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                   {card.label}
                 </Text>
-                <Text fw={700} size="xl">
+                <Text fw={700} size="xl" c={card.color}>
                   {card.value}
                 </Text>
               </Stack>

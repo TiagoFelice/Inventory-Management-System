@@ -47,6 +47,30 @@ const renderMetricCell = (value: number | string | null, type: 'currency' | 'num
   return formatNumber(value, 4);
 };
 
+const toSafeNumber = (value: number | string | null | undefined): number => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+};
+
+const getBalance = (
+  revenue: number | string | null | undefined,
+  purchaseCost: number | string | null | undefined
+): number => {
+  return toSafeNumber(revenue) - toSafeNumber(purchaseCost);
+};
+
+const getSignedMetricColor = (value: number): string => {
+  return value >= 0 ? 'green.7' : 'red.7';
+};
+
 const renderPrimaryCell = (perspective: FinancialPerspective, item: FinancialPerspectiveItem) => {
   if (perspective === 'products') {
     const product = item as ProductFinancialItem;
@@ -55,9 +79,9 @@ const renderPrimaryCell = (perspective: FinancialPerspective, item: FinancialPer
         <Text fw={600}>{product.name}</Text>
         <Group gap="xs">
           <Badge variant="light">{product.sku}</Badge>
-          <Text size="xs" c="dimmed">
+          {/* <Text size="xs" c="dimmed">
             {product.base_unit}
-          </Text>
+          </Text> */}
         </Group>
       </Stack>
     );
@@ -137,7 +161,7 @@ export const FinancialPerspectiveTable: React.FC<FinancialPerspectiveTableProps>
                 {perspective === 'purchase-items' ? <Table.Th>Remaining Value</Table.Th> : null}
                 <Table.Th>Purchased Qty</Table.Th>
                 <Table.Th>Sold Qty</Table.Th>
-                <Table.Th>Remaining Qty</Table.Th>
+                <Table.Th>Balance</Table.Th>
                 <Table.Th>Purchase Cost</Table.Th>
                 <Table.Th>Revenue</Table.Th>
                 <Table.Th>COGS</Table.Th>
@@ -148,6 +172,7 @@ export const FinancialPerspectiveTable: React.FC<FinancialPerspectiveTableProps>
             <Table.Tbody>
               {items.map((item) => {
                 const isSelected = selectedIds.includes(item.id);
+                const balance = getBalance(item.total_revenue, item.total_purchase_cost);
 
                 return (
                   <Table.Tr
@@ -174,7 +199,11 @@ export const FinancialPerspectiveTable: React.FC<FinancialPerspectiveTableProps>
                     ) : null}
                     <Table.Td>{renderMetricCell(item.quantity_purchased, 'number')}</Table.Td>
                     <Table.Td>{renderMetricCell(item.quantity_sold, 'number')}</Table.Td>
-                    <Table.Td>{renderMetricCell(item.quantity_remaining, 'number')}</Table.Td>
+                    <Table.Td>
+                      <Text fw={600} c={getSignedMetricColor(balance)}>
+                        {formatCurrency(balance)}
+                      </Text>
+                    </Table.Td>
                     <Table.Td>{renderMetricCell(item.total_purchase_cost, 'currency')}</Table.Td>
                     <Table.Td>{renderMetricCell(item.total_revenue, 'currency')}</Table.Td>
                     <Table.Td>{renderMetricCell(item.total_cogs, 'currency')}</Table.Td>

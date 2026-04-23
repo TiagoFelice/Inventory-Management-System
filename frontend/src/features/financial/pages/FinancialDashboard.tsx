@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Container,
+  Paper,
   SegmentedControl,
   Stack,
   Text,
@@ -19,14 +20,12 @@ import { FinancialSummaryCards } from '../components/details/FinancialSummaryCar
 import { FinancialFilters } from '../components/list/FinancialFilters';
 import { FinancialPerspectiveTable } from '../components/list/FinancialPerspectiveTable';
 
-const perspectiveLabels: Record<FinancialPerspective, { title: string; subtitle: string }> = {
+const perspectiveLabels: Record<FinancialPerspective, { title: string }> = {
   products: {
-    title: 'Product financials',
-    subtitle: 'Roll up purchase, sales, COGS, and remaining quantity by product.',
+    title: 'Products',
   },
   'purchase-items': {
-    title: 'Purchase order item financials',
-    subtitle: 'Measure realized revenue, realized profit, and remaining stock value per received lot.',
+    title: 'Purchase Items',
   },
 };
 
@@ -119,14 +118,18 @@ const FinancialDashboard: React.FC = () => {
           <Text fw={700} size="2rem">
             Financial Dashboard
           </Text>
-          <SegmentedControl
-            value={perspective}
-            onChange={(value) => setPerspective(value as FinancialPerspective)}
-            data={[
-              { label: 'Product', value: 'products' },
-              { label: 'Purchase Item', value: 'purchase-items' },
-            ]}
-          />
+          <Paper withBorder radius="md" p={6}>
+            <SegmentedControl
+              value={perspective}
+              onChange={(value) => setPerspective(value as FinancialPerspective)}
+              fullWidth
+              color="blue"
+              data={[
+                { label: 'Product', value: 'products' },
+                { label: 'Purchase Item', value: 'purchase-items' },
+              ]}
+            />
+          </Paper>
           <FinancialFilters
             searchPlaceholder={searchPlaceholders[perspective]}
             searchInput={searchInput}
@@ -157,11 +160,11 @@ const FinancialDashboard: React.FC = () => {
 
   const label = perspectiveLabels[perspective];
   const summaryTitle = hasSelection
-    ? `${label.title} · selected items`
-    : `${label.title} · all items`;
+    ? `${label.title} Summary`
+    : `${label.title} Summary`;
   const summarySubtitle = hasSelection
-    ? `Aggregated totals for ${selectedIds.length} selected item${selectedIds.length === 1 ? '' : 's'}.`
-    : label.subtitle;
+    ? `${selectedIds.length} selected`
+    : undefined;
 
   return (
     <Container size="xl" py="xl">
@@ -172,14 +175,18 @@ const FinancialDashboard: React.FC = () => {
           </Text>
         </Stack>
 
-        <SegmentedControl
-          value={perspective}
-          onChange={(value) => setPerspective(value as FinancialPerspective)}
-          data={[
-            { label: 'Product', value: 'products' },
-            { label: 'Purchase Item', value: 'purchase-items' },
-          ]}
-        />
+        <Paper withBorder radius="md" p={6}>
+          <SegmentedControl
+            value={perspective}
+            onChange={(value) => setPerspective(value as FinancialPerspective)}
+            fullWidth
+            color="blue"
+            data={[
+              { label: 'Product', value: 'products' },
+              { label: 'Purchase Item', value: 'purchase-items' },
+            ]}
+          />
+        </Paper>
 
         <FinancialFilters
           searchPlaceholder={searchPlaceholders[perspective]}
