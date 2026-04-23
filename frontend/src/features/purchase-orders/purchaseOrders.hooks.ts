@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query/keys';
 import { purchaseOrdersApi } from './purchaseOrders.api';
-import type { CreatePurchaseOrderPayload } from './purchaseOrder.types';
+import type {
+  CreatePurchaseOrderPayload,
+  ReceivePurchaseOrderEntriesPayload,
+} from './purchaseOrder.types';
 
 export const usePurchaseOrders = (params?: {
   limit?: number;
@@ -117,6 +120,26 @@ export const useReceivePurchaseOrder = () => {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.purchaseOrders.detail(id),
+      });
+    },
+  });
+};
+
+export const useReceivePurchaseOrderWithEntries = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ReceivePurchaseOrderEntriesPayload }) =>
+      purchaseOrdersApi.receiveWithEntries(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stocks.all,
       });
     },
   });

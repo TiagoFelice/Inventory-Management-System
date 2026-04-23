@@ -8,16 +8,18 @@ import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
 import {
   useCancelSalesOrder,
-  useConfirmSalesOrder,
+  useConfirmSalesOrderWithAllocations,
   useSalesOrder,
   useUpdateSalesOrder,
 } from '@features/sales-orders/salesOrders.hooks';
+import type { ConfirmSalesOrderAllocationPayload } from '@features/sales-orders/salesOrder.types';
 import { ActionErrorAlert } from '../components/list/ActionErrorAlert';
 import { SalesOrderForm, type SalesOrderFormData } from '../components/form/SalesOrderForm';
 import {
   SalesOrderItemsTable,
   type SalesOrderFormItem,
 } from '../components/form/SalesOrderItemsTable';
+import { SalesOrderAllocationModal } from '../components/form/SalesOrderAllocationModal';
 
 const SalesOrderEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +28,7 @@ const SalesOrderEditPage: React.FC = () => {
 
   const orderQuery = useSalesOrder(orderId);
   const updateMutation = useUpdateSalesOrder();
-  const confirmMutation = useConfirmSalesOrder();
+  const confirmMutation = useConfirmSalesOrderWithAllocations();
   const cancelMutation = useCancelSalesOrder();
   const productsQuery = useProducts();
   const products = productsQuery.data?.results || [];
@@ -45,6 +47,7 @@ const SalesOrderEditPage: React.FC = () => {
     isOpen: false,
     message: '',
   });
+  const [showAllocationModal, setShowAllocationModal] = useState(false);
 
   useEffect(() => {
     if (orderQuery.data) {
@@ -97,8 +100,9 @@ const SalesOrderEditPage: React.FC = () => {
     }
 
     try {
-      if (newStatus === 'confirmed' && orderQuery.data.status === 'draft') {
-        await confirmMutation.mutateAsync(orderId);
+      if (newStatus === 'confirmed') {
+        setShowAllocationModal(true);
+        return;
       } else if (newStatus === 'cancelled' && ['draft', 'confirmed'].includes(orderQuery.data.status)) {
         await cancelMutation.mutateAsync(orderId);
       } else if (newStatus !== 'draft') {
@@ -114,6 +118,24 @@ const SalesOrderEditPage: React.FC = () => {
         error?.response?.data?.detail ||
         error?.response?.data?.error ||
         'Failed to change status';
+      setErrorAlert({ isOpen: true, message });
+    }
+  };
+
+  const handleConfirmWithAllocations = async (payload: ConfirmSalesOrderAllocationPayload) => {
+    if (!orderId) {
+      return;
+    }
+
+    try {
+      await confirmMutation.mutateAsync({ id: orderId, payload });
+      setShowAllocationModal(false);
+      await orderQuery.refetch();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.detail ||
+        error?.response?.data?.error ||
+        'Failed to confirm order';
       setErrorAlert({ isOpen: true, message });
     }
   };
@@ -200,7 +222,7 @@ const SalesOrderEditPage: React.FC = () => {
                 }
               />
               <Text size="xs" c="dimmed" mt={4}>
-                Changing status uses dedicated actions to enforce workflow rules.
+                Confirmed status requires manual stock allocations. Other status changes still use the usual endpoints.
               </Text>
             </div>
 
@@ -233,6 +255,16 @@ const SalesOrderEditPage: React.FC = () => {
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
+
+        {orderQuery.data ? (
+          <SalesOrderAllocationModal
+            opened={showAllocationModal}
+            order={orderQuery.data}
+            onClose={() => setShowAllocationModal(false)}
+            onConfirm={handleConfirmWithAllocations}
+            isLoading={confirmMutation.isPending}
+          />
+        ) : null}
       </Stack>
     </Container>
   );

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query/keys';
 import { salesOrdersApi } from './salesOrders.api';
-import type { CreateSalesOrderPayload } from './salesOrder.types';
+import type { ConfirmSalesOrderAllocationPayload, CreateSalesOrderPayload } from './salesOrder.types';
 
 export const useSalesOrders = (params?: {
   limit?: number;
@@ -85,6 +85,26 @@ export const useConfirmSalesOrder = () => {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.salesOrders.detail(id),
+      });
+    },
+  });
+};
+
+export const useConfirmSalesOrderWithAllocations = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ConfirmSalesOrderAllocationPayload }) =>
+      salesOrdersApi.confirmWithAllocations(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stocks.all,
       });
     },
   });

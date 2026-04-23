@@ -7,8 +7,6 @@ import { ListPageHeader } from '@components/ui/ListPageHeader';
 import { ListPageLayout } from '@components/ui/ListPageLayout';
 import { ListTableCard } from '@components/ui/ListTableCard';
 import {
-  useCancelSalesOrder,
-  useConfirmSalesOrder,
   useDeleteSalesOrder,
   useSalesOrders,
 } from '@features/sales-orders/salesOrders.hooks';
@@ -36,8 +34,6 @@ const SalesOrdersPage: React.FC = () => {
     ordering,
   });
   const deleteMutation = useDeleteSalesOrder();
-  const confirmMutation = useConfirmSalesOrder();
-  const cancelMutation = useCancelSalesOrder();
 
   const handleDeleteConfirm = async () => {
     if (!deleteModal.orderId) return;
@@ -47,38 +43,6 @@ const SalesOrdersPage: React.FC = () => {
       setDeleteModal({ isOpen: false, orderId: null });
     } catch (error) {
       console.error('Delete failed:', error);
-    }
-  };
-
-  const handleConfirmOrder = async (orderId: number, event?: React.MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    try {
-      await confirmMutation.mutateAsync(orderId);
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        'Failed to confirm order';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleCancelOrder = async (orderId: number, event?: React.MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    try {
-      await cancelMutation.mutateAsync(orderId);
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        'Failed to cancel order';
-      setErrorAlert({ isOpen: true, message });
     }
   };
 
@@ -132,11 +96,7 @@ const SalesOrdersPage: React.FC = () => {
             orders={orders}
             onEdit={(id) => navigate(`/sales-orders/${id}/edit`)}
             onDelete={(id) => setDeleteModal({ isOpen: true, orderId: id })}
-            onConfirm={handleConfirmOrder}
-            onCancel={handleCancelOrder}
             onRowClick={(order) => navigate(`/sales-orders/${order.id}`)}
-            confirmLoading={confirmMutation.isPending}
-            cancelLoading={cancelMutation.isPending}
           />
         </ListTableCard>
       )}

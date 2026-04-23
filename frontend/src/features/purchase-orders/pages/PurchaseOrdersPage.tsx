@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   usePurchaseOrders,
   useDeletePurchaseOrder,
-  useConfirmPurchaseOrder,
-  useCancelPurchaseOrder,
-  useReceivePurchaseOrder,
 } from '../purchaseOrders.hooks';
 import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
@@ -38,9 +35,6 @@ const PurchaseOrdersPage: React.FC = () => {
   });
 
   const deleteMutation = useDeletePurchaseOrder();
-  const confirmMutation = useConfirmPurchaseOrder();
-  const cancelMutation = useCancelPurchaseOrder();
-  const receiveMutation = useReceivePurchaseOrder();
 
   const handleDeleteConfirm = async () => {
     if (deleteModal.orderId) {
@@ -50,42 +44,6 @@ const PurchaseOrdersPage: React.FC = () => {
       } catch (error) {
         console.error('Delete failed:', error);
       }
-    }
-  };
-
-  const handleConfirmOrder = async (orderId: number, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    try {
-      await confirmMutation.mutateAsync(orderId);
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to confirm order';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleCancelOrder = async (orderId: number, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    try {
-      await cancelMutation.mutateAsync(orderId);
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to cancel order';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleReceiveOrder = async (orderId: number, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    try {
-      await receiveMutation.mutateAsync(orderId);
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to receive order';
-      setErrorAlert({ isOpen: true, message });
     }
   };
 
@@ -147,13 +105,7 @@ const PurchaseOrdersPage: React.FC = () => {
             orders={orders}
             onEdit={(id) => navigate(`/purchase-orders/${id}/edit`)}
             onDelete={(id) => setDeleteModal({ isOpen: true, orderId: id })}
-            onConfirm={handleConfirmOrder}
-            onCancel={handleCancelOrder}
-            onReceive={handleReceiveOrder}
             onRowClick={(order) => navigate(`/purchase-orders/${order.id}`)}
-            confirmLoading={confirmMutation.isPending}
-            cancelLoading={cancelMutation.isPending}
-            receiveLoading={receiveMutation.isPending}
           />
         </ListTableCard>
       )}

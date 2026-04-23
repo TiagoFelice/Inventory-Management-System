@@ -1,6 +1,8 @@
 import { apiClient } from '@/lib/api/client';
 import type {
   SalesOrder,
+  ConfirmSalesOrderAllocationPayload,
+  ConfirmSalesOrderAllocationResponse,
   CreateSalesOrderPayload,
   SalesOrderListResponse,
 } from './salesOrder.types';
@@ -32,6 +34,12 @@ export const salesOrdersApi = {
 
   confirm: (id: number) =>
     apiClient.post(`/sales-orders/${id}/confirm/`),
+
+  confirmWithAllocations: (id: number, payload: ConfirmSalesOrderAllocationPayload) =>
+    apiClient.post<ConfirmSalesOrderAllocationResponse>(
+      `/sales-orders/${id}/confirm_with_allocations/`,
+      payload
+    ),
 
   cancel: (id: number) =>
     apiClient.post(`/sales-orders/${id}/cancel/`),

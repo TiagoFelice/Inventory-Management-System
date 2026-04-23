@@ -45,4 +45,32 @@ export interface ReceivePurchaseOrderResponse {
   message: string;
 }
 
+export interface ReceivePurchaseOrderEntriesPayload {
+  entries: Array<{
+    purchase_order_item_id: number;
+    quantity_received: number;
+    expiration_date?: string;
+  }>;
+}
+
+export interface ReceivePurchaseOrderEntriesResponse {
+  status: string;
+  message: string;
+  stock_entries: Array<{
+    id: number;
+    user: number;
+    product: number;
+    source_type: 'purchase_order';
+    source_reference_id: number;
+    quantity_received: number;
+    quantity_available: number;
+    unit_cost: number;
+    total_cost: number;
+    received_at: string;
+    expiration_date?: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+}
+
 export type PurchaseOrderListResponse = PaginatedResponse<PurchaseOrder>;

@@ -17,7 +17,7 @@ import {
   useUpdatePurchaseOrder,
   useConfirmPurchaseOrder,
   useCancelPurchaseOrder,
-  useReceivePurchaseOrder,
+  useReceivePurchaseOrderWithEntries,
 } from '../purchaseOrders.hooks';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
@@ -25,7 +25,9 @@ import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
 import { PurchaseOrderForm } from '../components/form/PurchaseOrderForm';
 import { PurchaseOrderItemsTable, type OrderItem } from '../components/form/PurchaseOrderItemsTable';
+import { PurchaseOrderReceiveModal } from '../components/form/PurchaseOrderReceiveModal';
 import { ActionErrorAlert } from '../components/list/ActionErrorAlert';
+import type { ReceivePurchaseOrderEntriesPayload } from '../purchaseOrder.types';
 
 const PurchaseOrderEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +38,7 @@ const PurchaseOrderEditPage: React.FC = () => {
   const updateMutation = useUpdatePurchaseOrder();
   const confirmMutation = useConfirmPurchaseOrder();
   const cancelMutation = useCancelPurchaseOrder();
-  const receiveMutation = useReceivePurchaseOrder();
+  const receiveMutation = useReceivePurchaseOrderWithEntries();
   const productsQuery = useProducts();
   const products = productsQuery.data?.results || [];
 
@@ -64,6 +66,7 @@ const PurchaseOrderEditPage: React.FC = () => {
     newStatus: null,
     currentStatus: null,
   });
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   const isUnusualWorkflow = (currentStatus: string, newStatus: string): boolean => {
     // Normal: draft -> confirmed -> received, or draft/confirmed -> cancelled
@@ -122,6 +125,11 @@ const PurchaseOrderEditPage: React.FC = () => {
     if (newStatus === currentStatus) {
       return;
     }
+
+    if (newStatus === 'received') {
+      setShowReceiveModal(true);
+      return;
+    }
     
     // Check if it's an unusual workflow
     if (isUnusualWorkflow(currentStatus, newStatus)) {
@@ -145,8 +153,6 @@ const PurchaseOrderEditPage: React.FC = () => {
     try {
       if (newStatus === 'confirmed' && currentStatus === 'draft') {
         await confirmMutation.mutateAsync(orderId);
-      } else if (newStatus === 'received' && currentStatus === 'confirmed') {
-        await receiveMutation.mutateAsync(orderId);
       } else if (newStatus === 'cancelled' && ['draft', 'confirmed'].includes(currentStatus)) {
         await cancelMutation.mutateAsync(orderId);
       } else {
@@ -159,6 +165,19 @@ const PurchaseOrderEditPage: React.FC = () => {
       setStatusConfirmation({ isOpen: false, newStatus: null, currentStatus: null });
     } catch (error: any) {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to change status';
+      setErrorAlert({ isOpen: true, message });
+    }
+  };
+
+  const handleReceiveWithEntries = async (payload: ReceivePurchaseOrderEntriesPayload) => {
+    if (!orderId) return;
+
+    try {
+      await receiveMutation.mutateAsync({ id: orderId, payload });
+      setShowReceiveModal(false);
+      await orderQuery.refetch();
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to receive order';
       setErrorAlert({ isOpen: true, message });
     }
   };
@@ -264,7 +283,7 @@ const PurchaseOrderEditPage: React.FC = () => {
                 }
               />
               <Text size="xs" c="dimmed" mt={4}>
-                Changing status uses specific endpoints to validate workflow rules.
+                Received status requires manual stock-entry splits. Other status changes still use the usual workflow endpoints.
               </Text>
             </div>
 
@@ -302,6 +321,16 @@ const PurchaseOrderEditPage: React.FC = () => {
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
+
+        {orderQuery.data ? (
+          <PurchaseOrderReceiveModal
+            opened={showReceiveModal}
+            order={orderQuery.data}
+            onClose={() => setShowReceiveModal(false)}
+            onConfirm={handleReceiveWithEntries}
+            isLoading={receiveMutation.isPending}
+          />
+        ) : null}
 
         {/* Unusual Workflow Confirmation Modal */}
         <Modal

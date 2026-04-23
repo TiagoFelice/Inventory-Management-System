@@ -44,4 +44,27 @@ export interface CreateSalesOrderPayload {
   items: CreateSalesOrderItemPayload[];
 }
 
+export interface ConfirmSalesOrderAllocationPayload {
+  allocations: Array<{
+    sales_order_item_id: number;
+    stock_entry_id: number;
+    quantity_allocated: number;
+  }>;
+}
+
+export interface ConfirmSalesOrderAllocationResponse {
+  status: string;
+  message: string;
+  total_profit?: number;
+  allocations: Array<{
+    id: number;
+    user: number;
+    sales_order_item: number;
+    stock_entry: number;
+    quantity_allocated: number;
+    created_at: string;
+    updated_at: string;
+  }>;
+}
+
 export type SalesOrderListResponse = PaginatedResponse<SalesOrder>;

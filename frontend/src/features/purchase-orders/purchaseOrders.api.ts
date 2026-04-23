@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/api/client';
 import type {
   PurchaseOrder,
   CreatePurchaseOrderPayload,
+  ReceivePurchaseOrderEntriesPayload,
+  ReceivePurchaseOrderEntriesResponse,
   PurchaseOrderListResponse,
   ReceivePurchaseOrderResponse,
 } from './purchaseOrder.types';
@@ -42,4 +44,10 @@ export const purchaseOrdersApi = {
 
   receive: (id: number) =>
     apiClient.post<ReceivePurchaseOrderResponse>(`/purchase-orders/${id}/receive/`, {}),
+
+  receiveWithEntries: (id: number, payload: ReceivePurchaseOrderEntriesPayload) =>
+    apiClient.post<ReceivePurchaseOrderEntriesResponse>(
+      `/purchase-orders/${id}/receive_with_entries/`,
+      payload
+    ),
 };

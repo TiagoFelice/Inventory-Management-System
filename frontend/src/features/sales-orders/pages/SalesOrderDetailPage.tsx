@@ -5,20 +5,23 @@ import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
 import {
   useCancelSalesOrder,
-  useConfirmSalesOrder,
+  useConfirmSalesOrderWithAllocations,
   useDeleteSalesOrder,
   useSalesOrder,
 } from '@features/sales-orders/salesOrders.hooks';
+import type { ConfirmSalesOrderAllocationPayload } from '@features/sales-orders/salesOrder.types';
 import { SalesOrderDetailHeader } from '../components/detail/SalesOrderDetailHeader';
 import { SalesOrderDetailItems } from '../components/detail/SalesOrderDetailItems';
 import { DeleteConfirmationModal } from '../components/list/DeleteConfirmationModal';
 import { ActionErrorAlert } from '../components/list/ActionErrorAlert';
+import { SalesOrderAllocationModal } from '../components/form/SalesOrderAllocationModal';
 
 const SalesOrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const orderId = id ? parseInt(id, 10) : null;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAllocationModal, setShowAllocationModal] = useState(false);
   const [errorAlert, setErrorAlert] = useState<{ isOpen: boolean; message: string }>({
     isOpen: false,
     message: '',
@@ -26,7 +29,7 @@ const SalesOrderDetailPage: React.FC = () => {
 
   const query = useSalesOrder(orderId);
   const deleteMutation = useDeleteSalesOrder();
-  const confirmMutation = useConfirmSalesOrder();
+  const confirmMutation = useConfirmSalesOrderWithAllocations();
   const cancelMutation = useCancelSalesOrder();
 
   const handleDelete = async () => {
@@ -44,9 +47,13 @@ const SalesOrderDetailPage: React.FC = () => {
     if (event) {
       event.stopPropagation();
     }
+    setShowAllocationModal(true);
+  };
 
+  const handleConfirmWithAllocations = async (payload: ConfirmSalesOrderAllocationPayload) => {
     try {
-      await confirmMutation.mutateAsync(orderId!);
+      await confirmMutation.mutateAsync({ id: orderId!, payload });
+      setShowAllocationModal(false);
       query.refetch();
     } catch (error: any) {
       const message =
@@ -117,6 +124,14 @@ const SalesOrderDetailPage: React.FC = () => {
           opened={errorAlert.isOpen}
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
+        />
+
+        <SalesOrderAllocationModal
+          opened={showAllocationModal}
+          order={order}
+          onClose={() => setShowAllocationModal(false)}
+          onConfirm={handleConfirmWithAllocations}
+          isLoading={confirmMutation.isPending}
         />
       </Stack>
     </Container>

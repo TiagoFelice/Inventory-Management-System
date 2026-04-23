@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, BadgeProps } from '@mantine/core';
 
-type StatusType = 'pending' | 'received' | 'shipped' | 'cancelled' | 'draft' | 'active';
+type StatusType = 'pending' | 'received' | 'shipped' | 'cancelled' | 'draft' | 'active' | 'confirmed';
 
 const STATUS_VARIANTS: Record<StatusType, { color: string; label: string }> = {
   pending: { color: 'yellow', label: 'Pending' },
@@ -10,6 +10,7 @@ const STATUS_VARIANTS: Record<StatusType, { color: string; label: string }> = {
   cancelled: { color: 'red', label: 'Cancelled' },
   draft: { color: 'gray', label: 'Draft' },
   active: { color: 'green', label: 'Active' },
+  confirmed: { color: 'blue', label: 'Confirmed' },
 };
 
 interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
