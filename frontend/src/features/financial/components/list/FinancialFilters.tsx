@@ -4,6 +4,7 @@ import { DateInput } from '@mantine/dates';
 import { IconSearch, IconX } from '@tabler/icons-react';
 
 interface FinancialFiltersProps {
+  searchPlaceholder: string;
   searchInput: string;
   startDate: Date | null;
   endDate: Date | null;
@@ -16,6 +17,7 @@ interface FinancialFiltersProps {
 }
 
 export const FinancialFilters: React.FC<FinancialFiltersProps> = ({
+  searchPlaceholder,
   searchInput,
   startDate,
   endDate,
@@ -29,7 +31,7 @@ export const FinancialFilters: React.FC<FinancialFiltersProps> = ({
   return (
     <Group align="flex-end" style={{ width: '100%' }} wrap="wrap">
       <TextInput
-        placeholder="Search by product, SKU, or order number..."
+        placeholder={searchPlaceholder}
         leftSection={<IconSearch size={16} />}
         rightSection={
           searchInput ? (
@@ -55,6 +57,9 @@ export const FinancialFilters: React.FC<FinancialFiltersProps> = ({
         }}
         style={{ flex: 1, minWidth: 260 }}
       />
+      <Button onClick={onSearchSubmit}>
+        Search
+      </Button>
       <DateInput
         label="Start date"
         placeholder="Select start date"
@@ -71,7 +76,7 @@ export const FinancialFilters: React.FC<FinancialFiltersProps> = ({
         clearable
         style={{ minWidth: 180 }}
       />
-      <Button variant="subtle" color="gray" onClick={onResetPeriod}>
+      <Button variant="light" color="gray" onClick={onResetPeriod}>
         Reset period
       </Button>
     </Group>

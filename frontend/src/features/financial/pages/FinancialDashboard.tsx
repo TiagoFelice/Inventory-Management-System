@@ -30,6 +30,11 @@ const perspectiveLabels: Record<FinancialPerspective, { title: string; subtitle:
   },
 };
 
+const searchPlaceholders: Record<FinancialPerspective, string> = {
+  products: 'Search products by name or SKU...',
+  'purchase-items': 'Search purchase items by order number, product, or SKU...',
+};
+
 const FinancialDashboard: React.FC = () => {
   const [perspective, setPerspective] = useState<FinancialPerspective>('products');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -123,6 +128,7 @@ const FinancialDashboard: React.FC = () => {
             ]}
           />
           <FinancialFilters
+            searchPlaceholder={searchPlaceholders[perspective]}
             searchInput={searchInput}
             startDate={startDate}
             endDate={endDate}
@@ -176,6 +182,7 @@ const FinancialDashboard: React.FC = () => {
         />
 
         <FinancialFilters
+          searchPlaceholder={searchPlaceholders[perspective]}
           searchInput={searchInput}
           startDate={startDate}
           endDate={endDate}

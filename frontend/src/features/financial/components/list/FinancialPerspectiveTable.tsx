@@ -98,9 +98,9 @@ export const FinancialPerspectiveTable: React.FC<FinancialPerspectiveTableProps>
             <Text fw={700} size="lg">
               Per-item breakdown
             </Text>
-            <Text size="sm" c="dimmed">
+            {/* <Text size="sm" c="dimmed">
               Select multiple rows to refresh the summary cards with aggregated totals.
-            </Text>
+            </Text> */}
           </Stack>
 
           <Group gap="sm">
