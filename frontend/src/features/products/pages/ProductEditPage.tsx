@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Container, Group, Stack } from '@mantine/core';
+import { Container, Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/app/router/route-paths';
@@ -34,9 +34,14 @@ const ProductEditPage: React.FC = () => {
       amount: (value) => (value < 0 ? 'Amount must be non-negative' : null),
     },
   });
+  const hasInitializedForm = React.useRef(false);
 
   React.useEffect(() => {
-    if (productQuery.data) {
+    hasInitializedForm.current = false;
+  }, [productId]);
+
+  React.useEffect(() => {
+    if (productQuery.data && !hasInitializedForm.current) {
       const product = productQuery.data;
       form.setValues({
         sku: product.sku || '',
@@ -45,6 +50,7 @@ const ProductEditPage: React.FC = () => {
         base_unit: product.base_unit || 'unit',
         amount: product.amount || 0,
       });
+      hasInitializedForm.current = true;
     }
   }, [form, productQuery.data]);
 
@@ -85,16 +91,17 @@ const ProductEditPage: React.FC = () => {
         <ProductHeader
           title="Edit Product"
           subtitle={`Update ${productQuery.data.name} (${productQuery.data.sku})`}
-          actions={
-            <Group>
-              <Button
-                variant="light"
-                onClick={() => navigate(detailPath)}
-              >
-                Back to Detail
-              </Button>
-            </Group>
-          }
+          // actions={
+          //   <Group>
+          //     <Button
+          //       type="button"
+          //       variant="light"
+          //       onClick={() => navigate(detailPath)}
+          //     >
+          //       Back to Detail
+          //     </Button>
+          //   </Group>
+          // }
         />
 
         <ProductForm

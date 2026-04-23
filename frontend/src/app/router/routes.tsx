@@ -87,12 +87,12 @@ export const router = createBrowserRouter([
         element: <ProductCreatePage />,
       },
       {
-        path: '/products/:id',
-        element: <ProductDetailPage />,
-      },
-      {
         path: '/products/:id/edit',
         element: <ProductEditPage />,
+      },
+      {
+        path: '/products/:id',
+        element: <ProductDetailPage />,
       },
       {
         path: ROUTES.stockEntries,

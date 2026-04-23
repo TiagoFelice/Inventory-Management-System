@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ROUTES } from '@/app/router/route-paths';
 import { useStockEntry, useUpdateStockEntry } from '@features/stocks/stocks.hooks';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
@@ -70,7 +71,7 @@ const StockEditPage: React.FC = () => {
           expiration_date: values.expiration_date || undefined,
         },
       });
-      navigate(`/stock-entries/${stockId}`);
+      navigate(productStockPath);
     } catch (error) {
       console.error(error);
     }
@@ -94,6 +95,7 @@ const StockEditPage: React.FC = () => {
     value: String(p.id),
     label: `${p.name} (${p.sku})`,
   }));
+  const productStockPath = ROUTES.stockDetail(stockQuery.data.product);
 
   return (
     <Container size="md" py="xl">
@@ -109,7 +111,7 @@ const StockEditPage: React.FC = () => {
           productOptions={productOptions}
           isLoadingProducts={productsQuery.isLoading}
           onSubmit={handleSubmit}
-          onCancel={() => navigate(`/stock-entries/${stockId}`)}
+          onCancel={() => navigate(productStockPath)}
         />
       </Stack>
     </Container>

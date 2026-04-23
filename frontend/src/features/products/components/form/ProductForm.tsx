@@ -38,7 +38,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           <ProductPriceSection form={form} disabled={isSubmitting} />
 
           <Group justify="flex-end" pt="xl">
-            <Button variant="light" onClick={onCancel}>
+            <Button type="button" variant="light" onClick={onCancel}>
               {cancelLabel}
             </Button>
             <Button type="submit" loading={isSubmitting}>

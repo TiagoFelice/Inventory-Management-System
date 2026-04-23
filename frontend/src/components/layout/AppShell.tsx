@@ -1,10 +1,12 @@
 import React, { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { AppShell as MantineAppShell, Loader, Center } from '@mantine/core';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
 const AppShell: React.FC = () => {
+  const location = useLocation();
+
   return (
     <MantineAppShell
       padding="md"
@@ -32,7 +34,7 @@ const AppShell: React.FC = () => {
             </Center>
           }
         >
-          <Outlet />
+          <Outlet key={location.pathname} />
         </Suspense>
       </MantineAppShell.Main>
     </MantineAppShell>
