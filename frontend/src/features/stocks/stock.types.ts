@@ -8,6 +8,9 @@ export interface StockEntry {
   quantity_sold?: number;
   unit_cost: number;
   source_type: 'manual' | 'purchase_order';
+  source_reference_id?: number;
+  purchase_order_id?: number;
+  purchase_order_number?: string;
   received_at: string;
   expiration_date?: string;
   created_at: string;

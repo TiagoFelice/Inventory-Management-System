@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Container, Grid, Group, Paper, Stack, Text } from '@mantine/core';
+import { Button, Container, Grid, Group, Modal, Paper, Stack, Text } from '@mantine/core';
 import { ROUTES } from '@/app/router/route-paths';
 import { ErrorState } from '@components/ui/ErrorState';
 import { LoadingState } from '@components/ui/LoadingState';
 import { formatCurrency, formatNumber } from '@shared/utils/formatting';
 import { useProduct } from '@/features/products/products.hooks';
-import { useStocks } from '../stocks.hooks';
-import { StockEntriesByProductCard } from '../components/detail/StockEntriesByProductCard';
+import type { StockEntry } from '../stock.types';
+import { useDeleteStockEntry, useStocks } from '../stocks.hooks';
+import { StockEntriesByProductCard } from '../components/list/StockEntriesByProductCard';
 
 const StockMetric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <Stack gap={4}>
@@ -24,12 +25,31 @@ const StockDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productId = id ? parseInt(id, 10) : null;
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    entry: StockEntry | null;
+  }>({
+    isOpen: false,
+    entry: null,
+  });
 
   const productQuery = useProduct(productId);
   const stockEntriesQuery = useStocks({
     product: productId || undefined,
     ordering: '-received_at',
   });
+  const deleteMutation = useDeleteStockEntry();
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.entry) return;
+
+    try {
+      await deleteMutation.mutateAsync(deleteModal.entry.id);
+      setDeleteModal({ isOpen: false, entry: null });
+    } catch (error) {
+      console.error('Failed to delete stock entry', error);
+    }
+  };
 
   if (productQuery.isLoading || stockEntriesQuery.isLoading) {
     return <LoadingState message="Loading stock details..." />;
@@ -51,7 +71,7 @@ const StockDetailsPage: React.FC = () => {
   const entries = stockEntriesQuery.data?.results || [];
 
   return (
-    <Container size="lg" py="xl">
+    <Container size="xl" py="xl">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start">
           <Stack gap={0}>
@@ -103,7 +123,39 @@ const StockDetailsPage: React.FC = () => {
           </Stack>
         </Paper>
 
-        <StockEntriesByProductCard entries={entries} />
+        <StockEntriesByProductCard
+          entries={entries}
+          onEdit={(entry: StockEntry) => navigate(ROUTES.stockEntryEdit(entry.id))}
+          onDelete={(entry: StockEntry) => setDeleteModal({ isOpen: true, entry })}
+        />
+
+        <Modal
+          opened={deleteModal.isOpen}
+          onClose={() => setDeleteModal({ isOpen: false, entry: null })}
+          title="Delete Stock Entry"
+          centered
+        >
+          <Stack>
+            <Text>
+              Are you sure you want to delete this stock entry? This action cannot be undone.
+            </Text>
+            <Group justify="flex-end">
+              <Button
+                variant="light"
+                onClick={() => setDeleteModal({ isOpen: false, entry: null })}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                loading={deleteMutation.isPending}
+                onClick={handleDeleteConfirm}
+              >
+                Delete
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
       </Stack>
     </Container>
   );
