@@ -2,6 +2,7 @@
 export interface StockEntry {
   id: number;
   product: number;
+  stock_identifier: string;
   product_name?: string;
   quantity_received: number;
   quantity_available: number;

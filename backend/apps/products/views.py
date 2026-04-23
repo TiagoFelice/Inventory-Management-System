@@ -13,7 +13,7 @@ class ProductViewSet(UserFilteredViewSet):
     """API endpoint for managing products."""
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    search_fields = ['sku', 'name', 'description']
+    search_fields = ['sku', 'name', 'description', 'stock_entries__stock_identifier']
     filterset_fields = ['id', 'sku']
     ordering_fields = ['sku', 'name', 'created_at']
     ordering = ['-created_at']
