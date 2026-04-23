@@ -35,27 +35,11 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
       align: 'center' as const,
       render: (value: string, row: StockEntry) => (
         <Stack gap={4} align="center">
-          {/* <Badge
-            color={value === 'purchase_order' ? 'blue' : 'gray'}
-            variant="light"
-            size="sm"
-            styles={{
-              root: {
-                whiteSpace: 'normal',
-                textAlign: 'center',
-                lineHeight: 1.2,
-                height: 'auto',
-                maxWidth: '100%',
-              },
-              label: {
-                whiteSpace: 'normal',
-                overflow: 'visible',
-                textOverflow: 'unset',
-              },
-            }}
-          >
-            {value === 'purchase_order' ? 'Purchase Order' : 'Manual Entry'}
-          </Badge> */}
+          {value === 'manual' ? (
+            <Badge color="gray" variant="light" size="sm">
+              Manual Entry
+            </Badge>
+          ) : null}
           {value === 'purchase_order' && row.purchase_order_id ? (
             <Anchor
               component={Link}
