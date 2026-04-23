@@ -1,29 +1,15 @@
 import React, { useState } from 'react';
-import {
-  Container,
-  Paper,
-  Stack,
-  Button,
-  Group,
-  TextInput,
-  NumberInput,
-  Table,
-  Select,
-  ActionIcon,
-  Alert,
-} from '@mantine/core';
-import { IconTrash, IconAlertCircle } from '@tabler/icons-react';
+import { Alert, Button, Container, Group, Paper, Stack } from '@mantine/core';
+import { IconAlertCircle } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { useCreateSalesOrder } from '@features/sales-orders/salesOrders.hooks';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
-import { formatCurrency } from '@shared/utils/formatting';
-
-interface OrderItem {
-  product: string;
-  quantity: number;
-  unit_price: number;
-}
+import { useCreateSalesOrder } from '@features/sales-orders/salesOrders.hooks';
+import { SalesOrderForm, type SalesOrderFormData } from '../components/form/SalesOrderForm';
+import {
+  SalesOrderItemsTable,
+  type SalesOrderFormItem,
+} from '../components/form/SalesOrderItemsTable';
 
 const SalesOrderCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,36 +17,39 @@ const SalesOrderCreatePage: React.FC = () => {
   const productsQuery = useProducts();
   const products = productsQuery.data?.results || [];
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SalesOrderFormData>({
     order_number: '',
     customer_name: '',
     sold_at: new Date().toISOString().split('T')[0],
   });
 
-  const [items, setItems] = useState<OrderItem[]>([
-    { product: '', quantity: 0, unit_price: 0 },
+  const [items, setItems] = useState<SalesOrderFormItem[]>([
+    { product: null, quantity: 0, unit_price: 0 },
   ]);
 
-  const handleFormChange = (field: string, value: any) => {
+  const handleFormChange = (field: keyof SalesOrderFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
+  const handleItemChange = (
+    index: number,
+    field: keyof SalesOrderFormItem,
+    value: SalesOrderFormItem[keyof SalesOrderFormItem]
+  ) => {
+    const nextItems = [...items];
+    nextItems[index] = { ...nextItems[index], [field]: value };
+    setItems(nextItems);
   };
 
   const handleAddItem = () => {
-    setItems([...items, { product: '', quantity: 0, unit_price: 0 }]);
+    setItems([...items, { product: null, quantity: 0, unit_price: 0 }]);
   };
 
   const handleRemoveItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+    setItems(items.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.order_number.trim()) {
       alert('Order number is required');
       return;
@@ -78,7 +67,7 @@ const SalesOrderCreatePage: React.FC = () => {
         customer_name: formData.customer_name || undefined,
         sold_at: new Date(formData.sold_at).toISOString(),
         items: validItems.map((item) => ({
-          product: parseInt(item.product, 10),
+          product: item.product!.id,
           quantity: item.quantity,
           unit_price: item.unit_price,
         })),
@@ -89,14 +78,7 @@ const SalesOrderCreatePage: React.FC = () => {
     }
   };
 
-  const totalRevenue = items.reduce(
-    (sum, item) => sum + item.quantity * item.unit_price,
-    0
-  );
-
-  const errorMessage = createMutation.error
-    ? getErrorMessage(createMutation.error)
-    : null;
+  const errorMessage = createMutation.error ? getErrorMessage(createMutation.error) : null;
 
   return (
     <Container size="lg" py="xl">
@@ -111,124 +93,21 @@ const SalesOrderCreatePage: React.FC = () => {
           )}
 
           <Stack gap="md">
-            {/* Order Header */}
-            <div>
-              <h3 style={{ marginBottom: 12 }}>Order Information</h3>
-              <Group grow>
-                <TextInput
-                  label="Order Number"
-                  placeholder="SO-2024-001"
-                  value={formData.order_number}
-                  onChange={(e) => handleFormChange('order_number', e.currentTarget.value)}
-                  disabled={createMutation.isPending}
-                />
-                <TextInput
-                  label="Customer Name"
-                  placeholder="Customer name (optional)"
-                  value={formData.customer_name}
-                  onChange={(e) => handleFormChange('customer_name', e.currentTarget.value)}
-                  disabled={createMutation.isPending}
-                />
-                <TextInput
-                  label="Order Date"
-                  type="date"
-                  value={formData.sold_at}
-                  onChange={(e) => handleFormChange('sold_at', e.currentTarget.value)}
-                  disabled={createMutation.isPending}
-                />
-              </Group>
-            </div>
+            <SalesOrderForm
+              formData={formData}
+              onChange={handleFormChange}
+              isLoading={createMutation.isPending}
+            />
 
-            {/* Order Items */}
-            <div>
-              <Group justify="space-between" mb="lg">
-                <h3 style={{ margin: 0 }}>Order Items</h3>
-                <Button
-                  size="sm"
-                  variant="light"
-                  onClick={handleAddItem}
-                  disabled={createMutation.isPending}
-                >
-                  Add Item
-                </Button>
-              </Group>
+            <SalesOrderItemsTable
+              items={items}
+              products={products}
+              onItemChange={handleItemChange}
+              onAddItem={handleAddItem}
+              onRemoveItem={handleRemoveItem}
+              isLoading={createMutation.isPending}
+            />
 
-              <Table striped>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Product</Table.Th>
-                    <Table.Th>Quantity</Table.Th>
-                    <Table.Th>Unit Price</Table.Th>
-                    <Table.Th>Subtotal</Table.Th>
-                    <Table.Th style={{ width: 40 }} />
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {items.map((item, index) => {
-                    const subtotal = item.quantity * item.unit_price;
-                    return (
-                      <Table.Tr key={index}>
-                        <Table.Td style={{ minWidth: 250 }}>
-                          <Select
-                            placeholder="Select product"
-                            data={products.map((p) => ({
-                              value: String(p.id),
-                              label: `${p.name} (${p.sku})`,
-                            }))}
-                            value={item.product}
-                            onChange={(val) => handleItemChange(index, 'product', val)}
-                            disabled={createMutation.isPending}
-                            searchable
-                          />
-                        </Table.Td>
-                        <Table.Td style={{ minWidth: 100 }}>
-                          <NumberInput
-                            placeholder="0"
-                            min={0}
-                            value={item.quantity}
-                            onChange={(val) => handleItemChange(index, 'quantity', val)}
-                            disabled={createMutation.isPending}
-                          />
-                        </Table.Td>
-                        <Table.Td style={{ minWidth: 120 }}>
-                          <NumberInput
-                            placeholder="0.00"
-                            min={0}
-                            step={0.01}
-                            value={item.unit_price}
-                            onChange={(val) => handleItemChange(index, 'unit_price', val)}
-                            disabled={createMutation.isPending}
-                          />
-                        </Table.Td>
-                        <Table.Td>{formatCurrency(subtotal)}</Table.Td>
-                        <Table.Td>
-                          <ActionIcon
-                            c="red"
-                            onClick={() => handleRemoveItem(index)}
-                            disabled={createMutation.isPending || items.length === 1}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Table.Td>
-                      </Table.Tr>
-                    );
-                  })}
-                </Table.Tbody>
-              </Table>
-
-              <Group justify="flex-end" mt="lg" pt="lg" style={{ borderTop: '1px solid #eee' }}>
-                <Stack gap={0}>
-                  <Group justify="flex-end">
-                    <span style={{ fontWeight: 600 }}>Total Revenue:</span>
-                    <span style={{ fontWeight: 700, fontSize: 18 }}>
-                      {formatCurrency(totalRevenue)}
-                    </span>
-                  </Group>
-                </Stack>
-              </Group>
-            </div>
-
-            {/* Actions */}
             <Group justify="flex-end" pt="xl">
               <Button
                 variant="light"
@@ -237,10 +116,7 @@ const SalesOrderCreatePage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button
-                onClick={handleSubmit}
-                loading={createMutation.isPending}
-              >
+              <Button onClick={handleSubmit} loading={createMutation.isPending}>
                 Create Order
               </Button>
             </Group>

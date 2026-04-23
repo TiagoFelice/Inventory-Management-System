@@ -73,3 +73,35 @@ export const useDeleteSalesOrder = () => {
     },
   });
 };
+
+export const useConfirmSalesOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => salesOrdersApi.confirm(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(id),
+      });
+    },
+  });
+};
+
+export const useCancelSalesOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => salesOrdersApi.cancel(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(id),
+      });
+    },
+  });
+};

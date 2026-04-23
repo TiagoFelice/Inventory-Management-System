@@ -8,6 +8,9 @@ export interface SalesOrderItem {
   quantity: number;
   unit_price: number;
   total_revenue: number;
+  total_cost: number;
+  profit: number;
+  margin_percent: number;
 }
 
 export interface SalesOrder {
@@ -18,6 +21,8 @@ export interface SalesOrder {
   sold_at: string;
   notes?: string;
   total_revenue: number;
+  total_cost: number;
+  total_profit: number;
   items?: SalesOrderItem[];
   created_at: string;
   updated_at: string;

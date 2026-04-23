@@ -30,6 +30,12 @@ export const salesOrdersApi = {
   partial_update: (id: number, payload: Partial<CreateSalesOrderPayload>) =>
     apiClient.patch<SalesOrder>(`/sales-orders/${id}/`, payload),
 
+  confirm: (id: number) =>
+    apiClient.post(`/sales-orders/${id}/confirm/`),
+
+  cancel: (id: number) =>
+    apiClient.post(`/sales-orders/${id}/cancel/`),
+
   delete: (id: number) =>
     apiClient.delete(`/sales-orders/${id}/`),
 };
