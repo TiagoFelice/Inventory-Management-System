@@ -22,7 +22,7 @@ export const SalesOrdersFilters: React.FC<SalesOrdersFiltersProps> = ({
   return (
     <Group align="flex-end" style={{ width: '100%' }} wrap="nowrap">
       <TextInput
-        placeholder="Search by order code or customer..."
+        placeholder="Search by order code, customer, or product..."
         leftSection={<IconSearch size={16} />}
         rightSection={
           searchInput ? (
