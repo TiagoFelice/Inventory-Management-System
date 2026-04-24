@@ -20,7 +20,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { ROUTES } from '@/app/router/route-paths';
 import { ErrorState } from '@components/ui/ErrorState';
 import { LoadingState } from '@components/ui/LoadingState';
-import { formatNumber } from '@shared/utils/formatting';
+import { formatCurrency, formatNumber } from '@shared/utils/formatting';
 import { useProduct } from '@/features/products/products.hooks';
 import { useSalesOrderItems } from '@/features/sales-orders/salesOrders.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
@@ -35,12 +35,16 @@ import {
 import { StockAllocationsByProductCard } from '../components/list/StockAllocationsByProductCard';
 import { StockEntriesByProductCard } from '../components/list/StockEntriesByProductCard';
 
-const StockMetric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+const StockMetric: React.FC<{ label: string; value: string; valueColor?: string }> = ({
+  label,
+  value,
+  valueColor,
+}) => (
   <Stack gap={4} align="center">
     <Text size="sm" c="dimmed" fw={500}>
       {label}
     </Text>
-    <Text fw={700} size="lg" ta="center">
+    <Text fw={700} size="lg" ta="center" c={valueColor}>
       {value}
     </Text>
   </Stack>
@@ -282,19 +286,26 @@ const StockDetailsPage: React.FC = () => {
             </Group>
 
             <Grid>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
                 <StockMetric
                   label="Quantity In Stock"
                   value={formatNumber(product.available_quantity, quantityDecimals)}
                 />
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+                <StockMetric
+                  label="Inventory Value"
+                  value={formatCurrency(product.total_inventory_value)}
+                  valueColor="blue.7"
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
                 <StockMetric
                   label="Stock Allocations"
                   value={String(allocations.length)}
                 />
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
                 <StockMetric label="Stock Entries" value={String(entries.length)} />
               </Grid.Col>
             </Grid>
