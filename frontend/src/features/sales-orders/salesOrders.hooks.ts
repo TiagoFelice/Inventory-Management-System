@@ -30,6 +30,21 @@ export const useSalesOrder = (id: number | null | undefined) => {
   });
 };
 
+export const useSalesOrderItems = (params?: {
+  product?: number;
+  sales_order?: number;
+  status?: string;
+}) => {
+  return useQuery({
+    queryKey: queryKeys.salesOrders.items(params),
+    queryFn: async () => {
+      const response = await salesOrdersApi.listItems(params);
+      return response.data;
+    },
+    enabled: !!(params?.product || params?.sales_order),
+  });
+};
+
 export const useCreateSalesOrder = () => {
   const queryClient = useQueryClient();
 

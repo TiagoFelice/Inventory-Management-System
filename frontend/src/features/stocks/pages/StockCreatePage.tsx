@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/app/router/route-paths';
 import { useCreateStockEntry } from '@features/stocks/stocks.hooks';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
@@ -17,7 +18,6 @@ const StockCreatePage: React.FC = () => {
     initialValues: {
       product: '',
       quantity_received: 0,
-      unit_cost: 0,
       source_type: 'manual',
       received_at: new Date().toISOString().split('T')[0],
       expiration_date: '',
@@ -27,8 +27,6 @@ const StockCreatePage: React.FC = () => {
         value.length === 0 ? 'Product is required' : null,
       quantity_received: (value: number) =>
         value <= 0 ? 'Quantity must be greater than 0' : null,
-      unit_cost: (value: number) =>
-        value < 0 ? 'Unit cost cannot be negative' : null,
       received_at: (value: string) =>
         value.length === 0 ? 'Received date is required' : null,
     },
@@ -39,12 +37,11 @@ const StockCreatePage: React.FC = () => {
       await createMutation.mutateAsync({
         product: parseInt(values.product, 10),
         quantity_received: values.quantity_received,
-        unit_cost: values.unit_cost,
         source_type: 'manual',
         received_at: values.received_at,
         expiration_date: values.expiration_date || undefined,
       });
-      navigate('/stock-entries');
+      navigate(ROUTES.stocks);
     } catch (error) {
       console.error(error);
     }
@@ -71,7 +68,7 @@ const StockCreatePage: React.FC = () => {
           isLoadingProducts={productsQuery.isLoading}
           showSourceType={false}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/stock-entries')}
+          onCancel={() => navigate(ROUTES.stocks)}
         />
       </Stack>
     </Container>

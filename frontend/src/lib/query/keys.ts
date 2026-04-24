@@ -13,6 +13,7 @@ export const queryKeys = {
     detail: (id: number | null | undefined) => ['stocks', 'detail', id] as const,
     allocation: (id: number | null | undefined) =>
       ['stocks', 'allocation', id] as const,
+    allocations: (params?: unknown) => ['stocks', 'allocations', params] as const,
   },
   purchaseOrders: {
     all: ['purchase-orders'] as const,
@@ -23,6 +24,7 @@ export const queryKeys = {
   salesOrders: {
     all: ['sales-orders'] as const,
     list: (params?: unknown) => ['sales-orders', 'list', params] as const,
+    items: (params?: unknown) => ['sales-orders', 'items', params] as const,
     detail: (id: number | null | undefined) =>
       ['sales-orders', 'detail', id] as const,
   },

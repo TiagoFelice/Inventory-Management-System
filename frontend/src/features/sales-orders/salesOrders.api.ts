@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import type {
   SalesOrder,
+  SalesOrderItemListResponse,
   ConfirmSalesOrderAllocationPayload,
   ConfirmSalesOrderAllocationResponse,
   CreateSalesOrderPayload,
@@ -22,6 +23,17 @@ export const salesOrdersApi = {
 
   get: (id: number) =>
     apiClient.get<SalesOrder>(`/sales-orders/${id}/`),
+
+  listItems: (params?: {
+    product?: number;
+    sales_order?: number;
+    status?: string;
+  }) => {
+    const cleanParams = params ? Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    ) : {};
+    return apiClient.get<SalesOrderItemListResponse>('/sales-order-items/', { params: cleanParams });
+  },
 
   create: (payload: CreateSalesOrderPayload) =>
     apiClient.post<SalesOrder>('/sales-orders/', payload),

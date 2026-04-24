@@ -19,21 +19,20 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/app/router/route-paths';
 import { useProducts } from '@/features/products/products.hooks';
-import { useStocks } from '@features/stocks/stocks.hooks';
 import { usePurchaseOrders } from '@features/purchase-orders/purchaseOrders.hooks';
 import { useSalesOrders } from '@features/sales-orders/salesOrders.hooks';
 import { LoadingState } from '@components/ui/LoadingState';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const productsQuery = useProducts({ limit: 1 });
-  const stocksQuery = useStocks({ limit: 1 });
+  const productsQuery = useProducts();
   const purchaseOrdersQuery = usePurchaseOrders({ limit: 1 });
   const salesOrdersQuery = useSalesOrders({ limit: 1 });
+  const stockedProductsCount =
+    productsQuery.data?.results.filter((product) => Number(product.available_quantity) > 0).length || 0;
 
   const isLoading =
     productsQuery.isLoading ||
-    stocksQuery.isLoading ||
     purchaseOrdersQuery.isLoading ||
     salesOrdersQuery.isLoading;
 
@@ -50,11 +49,11 @@ const DashboardPage: React.FC = () => {
       action: () => navigate(ROUTES.products),
     },
     {
-      title: 'Stock Entries',
-      count: stocksQuery.data?.count || 0,
+      title: 'Stocks',
+      count: stockedProductsCount,
       icon: IconShoppingCart,
       color: 'green',
-      action: () => navigate(ROUTES.stockEntries),
+      action: () => navigate(ROUTES.stocks),
     },
     {
       title: 'Purchase Orders',

@@ -4,6 +4,10 @@ import type {
   CreateStockPayload,
   StockListResponse,
   StockEntryAllocationDetailResponse,
+  StockAllocationListResponse,
+  StockAllocation,
+  CreateStockAllocationPayload,
+  UpdateStockAllocationPayload,
 } from './stock.types';
 
 export const stocksApi = {
@@ -38,4 +42,27 @@ export const stocksApi = {
     apiClient.get<StockEntryAllocationDetailResponse>(
       `/stock-entries/${id}/allocation_detail/`
     ),
+
+  listAllocations: (params?: {
+    stock_entry?: number;
+    product?: number;
+    type?: string;
+  }) => {
+    const cleanParams = params ? Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    ) : {};
+    if (cleanParams.product) {
+      cleanParams['stock_entry__product'] = cleanParams.product;
+      delete cleanParams.product;
+    }
+    return apiClient.get<StockAllocationListResponse>('/stock-allocations/', { params: cleanParams });
+  },
+
+  createAllocation: (payload: CreateStockAllocationPayload) =>
+    apiClient.post<StockAllocation>('/stock-allocations/', payload),
+
+  partialUpdateAllocation: (id: number, payload: UpdateStockAllocationPayload) =>
+    apiClient.patch<StockAllocation>(`/stock-allocations/${id}/`, payload),
+
+  deleteAllocation: (id: number) => apiClient.delete(`/stock-allocations/${id}/`),
 };

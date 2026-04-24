@@ -11,6 +11,7 @@ export interface Product {
   is_active: boolean;
   available_quantity: number;
   total_inventory_value: number;
+  has_stock_entries: boolean;
   created_at: string;
   updated_at: string;
   user: number;

@@ -24,7 +24,6 @@ const StockEditPage: React.FC = () => {
     initialValues: {
       product: '',
       quantity_received: 0,
-      unit_cost: 0,
       source_type: 'manual',
       received_at: new Date().toISOString().split('T')[0],
       expiration_date: '',
@@ -34,8 +33,6 @@ const StockEditPage: React.FC = () => {
         value.length === 0 ? 'Product is required' : null,
       quantity_received: (value: number) =>
         value <= 0 ? 'Quantity must be greater than 0' : null,
-      unit_cost: (value: number) =>
-        value < 0 ? 'Unit cost cannot be negative' : null,
       source_type: (value: string) =>
         value.length === 0 ? 'Source type is required' : null,
       received_at: (value: string) =>
@@ -49,7 +46,6 @@ const StockEditPage: React.FC = () => {
       form.setValues({
         product: String(stock.product) || '',
         quantity_received: stock.quantity_received || 0,
-        unit_cost: stock.unit_cost || 0,
         source_type: stock.source_type || 'manual',
         received_at: stock.received_at?.split('T')[0] || new Date().toISOString().split('T')[0],
         expiration_date: stock.expiration_date?.split('T')[0] || '',
@@ -65,8 +61,6 @@ const StockEditPage: React.FC = () => {
         payload: {
           product: parseInt(values.product, 10),
           quantity_received: values.quantity_received,
-          unit_cost: values.unit_cost,
-          source_type: values.source_type as any,
           received_at: values.received_at,
           expiration_date: values.expiration_date || undefined,
         },
@@ -110,6 +104,7 @@ const StockEditPage: React.FC = () => {
           cancelLabel="Cancel"
           productOptions={productOptions}
           isLoadingProducts={productsQuery.isLoading}
+          disableSourceType
           onSubmit={handleSubmit}
           onCancel={() => navigate(productStockPath)}
         />

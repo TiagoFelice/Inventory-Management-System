@@ -23,7 +23,10 @@ const StocksPage: React.FC = () => {
 
   const products = query.data?.results || [];
   const sortedProducts = useMemo(() => {
-    const items = products.filter((product: Product) => Number(product.available_quantity) > 0);
+    const items = products.filter(
+      (product: Product) =>
+        Number(product.available_quantity) > 0 || product.has_stock_entries
+    );
 
     items.sort((a: Product, b: Product) => {
       switch (ordering) {
@@ -83,8 +86,8 @@ const StocksPage: React.FC = () => {
     >
       {sortedProducts.length === 0 && !search ? (
         <EmptyState
-          title="No Stocked Products"
-          description="Start by adding a stock entry to put inventory into a product."
+          title="No Stocks"
+          description="Add a stock entry to start tracking inventory."
           actionLabel="Add Stock Entry"
           onAction={() => navigate(ROUTES.stockEntryNew)}
         />

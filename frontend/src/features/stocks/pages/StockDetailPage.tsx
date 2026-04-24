@@ -1,13 +1,38 @@
 import React, { useState } from 'react';
+import { useForm } from '@mantine/form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Container, Grid, Group, Modal, Paper, Stack, Text } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Container,
+  Grid,
+  Group,
+  Modal,
+  NumberInput,
+  Paper,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+} from '@mantine/core';
+import { IconAlertCircle } from '@tabler/icons-react';
 import { ROUTES } from '@/app/router/route-paths';
 import { ErrorState } from '@components/ui/ErrorState';
 import { LoadingState } from '@components/ui/LoadingState';
-import { formatCurrency, formatNumber } from '@shared/utils/formatting';
+import { formatNumber } from '@shared/utils/formatting';
 import { useProduct } from '@/features/products/products.hooks';
+import { useSalesOrderItems } from '@/features/sales-orders/salesOrders.hooks';
+import { getErrorMessage } from '@shared/utils/errors';
 import type { StockEntry } from '../stock.types';
-import { useDeleteStockEntry, useStocks } from '../stocks.hooks';
+import {
+  useCreateStockAllocation,
+  useCreateStockEntry,
+  useDeleteStockEntry,
+  useStockAllocations,
+  useStocks,
+} from '../stocks.hooks';
+import { StockAllocationsByProductCard } from '../components/list/StockAllocationsByProductCard';
 import { StockEntriesByProductCard } from '../components/list/StockEntriesByProductCard';
 
 const StockMetric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
@@ -32,13 +57,43 @@ const StockDetailsPage: React.FC = () => {
     isOpen: false,
     entry: null,
   });
+  const [stockEntryModalOpen, setStockEntryModalOpen] = useState(false);
+  const [allocationModalOpen, setAllocationModalOpen] = useState(false);
+  const [allocationEntryId, setAllocationEntryId] = useState<string | null>(null);
+  const [allocationType, setAllocationType] = useState<'sale' | 'expired' | 'other'>('other');
+  const [allocationQuantity, setAllocationQuantity] = useState<number | string>(0);
+  const [allocationNotes, setAllocationNotes] = useState('');
+  const [salesOrderItemId, setSalesOrderItemId] = useState<string | null>(null);
+  const [allocationError, setAllocationError] = useState<string | null>(null);
 
   const productQuery = useProduct(productId);
   const stockEntriesQuery = useStocks({
     product: productId || undefined,
     ordering: '-received_at',
   });
+  const stockAllocationsQuery = useStockAllocations({
+    product: productId || undefined,
+  });
   const deleteMutation = useDeleteStockEntry();
+  const createStockEntryMutation = useCreateStockEntry();
+  const createAllocationMutation = useCreateStockAllocation();
+  const salesOrderItemsQuery = useSalesOrderItems({
+    product: productId || undefined,
+    status: 'draft,confirmed',
+  });
+  const stockEntryForm = useForm({
+    initialValues: {
+      quantity_received: 0,
+      received_at: new Date().toISOString().split('T')[0],
+      expiration_date: '',
+    },
+    validate: {
+      quantity_received: (value: number) =>
+        value <= 0 ? 'Quantity must be greater than 0' : null,
+      received_at: (value: string) =>
+        value.length === 0 ? 'Received date is required' : null,
+    },
+  });
 
   const handleDeleteConfirm = async () => {
     if (!deleteModal.entry) return;
@@ -51,17 +106,34 @@ const StockDetailsPage: React.FC = () => {
     }
   };
 
-  if (productQuery.isLoading || stockEntriesQuery.isLoading) {
+  const resetAllocationModal = () => {
+    setAllocationModalOpen(false);
+    setAllocationEntryId(null);
+    setAllocationType('other');
+    setAllocationQuantity(0);
+    setAllocationNotes('');
+    setSalesOrderItemId(null);
+    setAllocationError(null);
+  };
+
+  const resetStockEntryModal = () => {
+    setStockEntryModalOpen(false);
+    stockEntryForm.reset();
+    stockEntryForm.setFieldValue('received_at', new Date().toISOString().split('T')[0]);
+  };
+
+  if (productQuery.isLoading || stockEntriesQuery.isLoading || stockAllocationsQuery.isLoading) {
     return <LoadingState message="Loading stock details..." />;
   }
 
-  if (productQuery.isError || stockEntriesQuery.isError || !productQuery.data) {
+  if (productQuery.isError || stockEntriesQuery.isError || stockAllocationsQuery.isError || !productQuery.data) {
     return (
       <ErrorState
         message="Failed to load stock details"
         onRetry={() => {
           productQuery.refetch();
           stockEntriesQuery.refetch();
+          stockAllocationsQuery.refetch();
         }}
       />
     );
@@ -69,9 +141,109 @@ const StockDetailsPage: React.FC = () => {
 
   const product = productQuery.data;
   const entries = stockEntriesQuery.data?.results || [];
+  const allocations = stockAllocationsQuery.data?.results || [];
+  const quantityDecimals = product.base_unit === 'unit' ? 0 : 2;
+  const availableEntries = entries.filter((entry) => Number(entry.quantity_available) > 0);
+  const selectedEntry = availableEntries.find((entry) => String(entry.id) === allocationEntryId);
+  const salesOrderItems = salesOrderItemsQuery.data?.results || [];
+  const salesAllocationOptions = salesOrderItems
+    .map((item) => {
+      const allocatedTotal = (item.allocations || [])
+        .filter((allocation) => allocation.type === 'sale')
+        .reduce((sum, allocation) => sum + Number(allocation.quantity_allocated), 0);
+      const remainingQuantity = Number(item.quantity) - allocatedTotal;
+
+      return {
+        value: String(item.id),
+        label: `${item.sales_order_code || `Order #${item.sales_order}`} · ${item.product_name || product.name} · remaining ${formatNumber(remainingQuantity, quantityDecimals)}`,
+        remainingQuantity,
+      };
+    })
+    .filter((item) => item.remainingQuantity > 0.0001);
+
+  const handleCreateAllocation = async () => {
+    if (!allocationEntryId) {
+      setAllocationError('Stock entry is required.');
+      return;
+    }
+
+    const numericQuantity =
+      typeof allocationQuantity === 'number' ? allocationQuantity : Number(allocationQuantity);
+    if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+      setAllocationError('Quantity must be greater than zero.');
+      return;
+    }
+
+    if (!selectedEntry) {
+      setAllocationError('Select a valid stock entry.');
+      return;
+    }
+
+    if (numericQuantity - Number(selectedEntry.quantity_available) > 0.0001) {
+      setAllocationError(
+        `Quantity cannot exceed ${formatNumber(selectedEntry.quantity_available, quantityDecimals)} for the selected stock entry.`
+      );
+      return;
+    }
+
+    const payload = {
+      stock_entry: selectedEntry.id,
+      quantity_allocated: numericQuantity,
+      type: allocationType,
+      notes: allocationNotes.trim() || null,
+      sales_order_item:
+        allocationType === 'sale' && salesOrderItemId ? Number(salesOrderItemId) : null,
+    };
+
+    if (allocationType === 'sale') {
+      if (!salesOrderItemId) {
+        setAllocationError('Sales order item is required for sale allocations.');
+        return;
+      }
+
+      const selectedSalesOption = salesAllocationOptions.find((item) => item.value === salesOrderItemId);
+      if (!selectedSalesOption) {
+        setAllocationError('Select a valid sales order item.');
+        return;
+      }
+
+      if (numericQuantity - selectedSalesOption.remainingQuantity > 0.0001) {
+        setAllocationError(
+          `Quantity cannot exceed ${formatNumber(selectedSalesOption.remainingQuantity, quantityDecimals)} for the selected sales order item.`
+        );
+        return;
+      }
+    }
+
+    try {
+      await createAllocationMutation.mutateAsync(payload);
+      resetAllocationModal();
+    } catch (error) {
+      setAllocationError(getErrorMessage(error));
+    }
+  };
+
+  const handleCreateStockEntry = async (values: typeof stockEntryForm.values) => {
+    if (!productId) {
+      return;
+    }
+
+    try {
+      await createStockEntryMutation.mutateAsync({
+        product: productId,
+        quantity_received: values.quantity_received,
+        source_type: 'manual',
+        received_at: values.received_at,
+        expiration_date: values.expiration_date || undefined,
+      });
+      resetStockEntryModal();
+    } catch (error) {
+      console.error('Failed to create stock entry', error);
+    }
+  };
 
   return (
-    <Container size="xl" py="xl">
+    <Container fluid px="xl" py="xl">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start">
           <Stack gap={0}>
@@ -81,10 +253,16 @@ const StockDetailsPage: React.FC = () => {
             </Text>
           </Stack>
           <Group>
-            <Button variant="light" onClick={() => navigate(ROUTES.stockEntryNew)}>
+            <Button
+              onClick={() => setAllocationModalOpen(true)}
+              disabled={availableEntries.length === 0}
+            >
+              Add Stock Allocation
+            </Button>
+            <Button variant="light" color="teal" onClick={() => setStockEntryModalOpen(true)}>
               Add Stock Entry
             </Button>
-            <Button variant="light" onClick={() => navigate(ROUTES.stockEntries)}>
+            <Button variant="light" color="blue" onClick={() => navigate(ROUTES.stocks)}>
               Back
             </Button>
           </Group>
@@ -107,13 +285,13 @@ const StockDetailsPage: React.FC = () => {
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <StockMetric
                   label="Quantity In Stock"
-                  value={formatNumber(product.available_quantity, product.base_unit === 'unit' ? 0 : 2)}
+                  value={formatNumber(product.available_quantity, quantityDecimals)}
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <StockMetric
-                  label="Inventory Value"
-                  value={formatCurrency(product.total_inventory_value)}
+                  label="Stock Allocations"
+                  value={String(allocations.length)}
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 4 }}>
@@ -127,6 +305,12 @@ const StockDetailsPage: React.FC = () => {
           entries={entries}
           onEdit={(entry: StockEntry) => navigate(ROUTES.stockEntryEdit(entry.id))}
           onDelete={(entry: StockEntry) => setDeleteModal({ isOpen: true, entry })}
+        />
+
+        <StockAllocationsByProductCard
+          allocations={allocations}
+          entries={entries}
+          quantityDecimals={quantityDecimals}
         />
 
         <Modal
@@ -154,6 +338,176 @@ const StockDetailsPage: React.FC = () => {
                 Delete
               </Button>
             </Group>
+          </Stack>
+        </Modal>
+
+        <Modal
+          opened={stockEntryModalOpen}
+          onClose={resetStockEntryModal}
+          title="Add Stock Entry"
+          centered
+        >
+          <form onSubmit={stockEntryForm.onSubmit(handleCreateStockEntry)}>
+            <Stack gap="md">
+              {createStockEntryMutation.error ? (
+                <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">
+                  {getErrorMessage(createStockEntryMutation.error)}
+                </Alert>
+              ) : null}
+
+              <Stack gap={4}>
+                <Text size="sm" fw={500}>
+                  Product
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {product.name} ({product.sku})
+                </Text>
+              </Stack>
+
+              <NumberInput
+                label="Quantity Received"
+                min={1}
+                decimalScale={quantityDecimals}
+                step={quantityDecimals === 0 ? 1 : 0.01}
+                {...stockEntryForm.getInputProps('quantity_received')}
+                disabled={createStockEntryMutation.isPending}
+                required
+              />
+
+              <TextInput
+                label="Received Date"
+                type="date"
+                {...stockEntryForm.getInputProps('received_at')}
+                disabled={createStockEntryMutation.isPending}
+                required
+              />
+
+              <TextInput
+                label="Expiration Date (Optional)"
+                type="date"
+                {...stockEntryForm.getInputProps('expiration_date')}
+                disabled={createStockEntryMutation.isPending}
+              />
+
+              <Group justify="flex-end">
+                <Button
+                  variant="light"
+                  onClick={resetStockEntryModal}
+                  disabled={createStockEntryMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" loading={createStockEntryMutation.isPending}>
+                  Create Stock Entry
+                </Button>
+              </Group>
+            </Stack>
+          </form>
+        </Modal>
+
+        <Modal
+          opened={allocationModalOpen}
+          onClose={resetAllocationModal}
+          title="Add Stock Allocation"
+          centered
+        >
+          <Stack gap="md">
+            {allocationError ? (
+              <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">
+                {allocationError}
+              </Alert>
+            ) : null}
+
+            {availableEntries.length === 0 ? (
+              <Alert icon={<IconAlertCircle size={16} />} color="orange" variant="light">
+                Add stock first before creating an allocation.
+              </Alert>
+            ) : (
+              <>
+                <Select
+                  label="Stock Entry"
+                  placeholder="Select stock entry"
+                  data={availableEntries.map((entry) => ({
+                    value: String(entry.id),
+                    label: `${entry.stock_identifier} · available ${formatNumber(entry.quantity_available, quantityDecimals)}`,
+                  }))}
+                  value={allocationEntryId}
+                  onChange={(value) => setAllocationEntryId(value)}
+                  disabled={createAllocationMutation.isPending}
+                  searchable
+                  required
+                />
+
+                <Select
+                  label="Type"
+                  data={[
+                    { value: 'sale', label: 'Sale' },
+                    { value: 'expired', label: 'Expired' },
+                    { value: 'other', label: 'Other' },
+                  ]}
+                  value={allocationType}
+                  onChange={(value) => {
+                    if (!value) return;
+                    setAllocationType(value as 'sale' | 'expired' | 'other');
+                    if (value !== 'sale') {
+                      setSalesOrderItemId(null);
+                    }
+                  }}
+                  disabled={createAllocationMutation.isPending}
+                  required
+                />
+
+                {allocationType === 'sale' ? (
+                  <Select
+                    label="Sales Order Item"
+                    placeholder="Select sales order item"
+                    data={salesAllocationOptions}
+                    value={salesOrderItemId}
+                    onChange={(value) => setSalesOrderItemId(value)}
+                    disabled={createAllocationMutation.isPending || salesOrderItemsQuery.isLoading}
+                    searchable
+                    required
+                  />
+                ) : null}
+
+                <NumberInput
+                  label="Quantity"
+                  value={allocationQuantity}
+                  onChange={setAllocationQuantity}
+                  min={0}
+                  max={selectedEntry ? Number(selectedEntry.quantity_available) : undefined}
+                  decimalScale={quantityDecimals}
+                  step={quantityDecimals === 0 ? 1 : 0.01}
+                  disabled={createAllocationMutation.isPending}
+                  required
+                />
+
+                <Textarea
+                  label="Notes"
+                  value={allocationNotes}
+                  onChange={(event) => setAllocationNotes(event.currentTarget.value)}
+                  minRows={3}
+                  autosize
+                  disabled={createAllocationMutation.isPending}
+                />
+
+                <Group justify="flex-end">
+                  <Button
+                    variant="light"
+                    onClick={resetAllocationModal}
+                    disabled={createAllocationMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateAllocation}
+                    loading={createAllocationMutation.isPending}
+                  >
+                    Create Allocation
+                  </Button>
+                </Group>
+              </>
+            )}
           </Stack>
         </Modal>
       </Stack>

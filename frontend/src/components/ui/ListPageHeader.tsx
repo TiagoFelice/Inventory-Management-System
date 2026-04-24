@@ -6,8 +6,8 @@ interface ListPageHeaderProps {
   title: string;
   itemCount: number;
   itemLabel: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export const ListPageHeader: React.FC<ListPageHeaderProps> = ({
@@ -29,9 +29,11 @@ export const ListPageHeader: React.FC<ListPageHeaderProps> = ({
         ) : null}
       </Stack>
 
-      <Button leftSection={<IconPlus size={16} />} onClick={onAction}>
-        {actionLabel}
-      </Button>
+      {actionLabel && onAction ? (
+        <Button leftSection={<IconPlus size={16} />} onClick={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
     </Group>
   );
 };

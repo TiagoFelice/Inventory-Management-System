@@ -1,9 +1,9 @@
 import React from 'react';
 import { ActionIcon, Anchor, Badge, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { DataTable } from '@components/ui/DataTable';
-import { formatCurrency, formatDate, formatNumber } from '@shared/utils/formatting';
+import { formatDate, formatNumber } from '@shared/utils/formatting';
 import { ROUTES } from '@/app/router/route-paths';
 import type { StockEntry } from '../../stock.types';
 
@@ -18,8 +18,6 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
   onEdit,
   onDelete,
 }) => {
-  const navigate = useNavigate();
-
   const columns = [
     {
       key: 'stock_identifier',
@@ -36,9 +34,9 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
       render: (value: string, row: StockEntry) => (
         <Stack gap={4} align="center">
           {value === 'manual' ? (
-            <Text size="sm" fw={600} c="dimmed">
-              Manual Entry
-            </Text>
+            <Badge variant="light" color="gray">
+              manual
+            </Badge>
           ) : null}
           {value === 'purchase_order' && row.purchase_order_id ? (
             <Anchor
@@ -68,23 +66,16 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
       render: (value: number | string) => formatNumber(value),
     },
     {
-      key: 'unit_cost',
-      label: 'Unit Cost',
-      width: '14%',
-      align: 'center' as const,
-      render: (value: number | string) => formatCurrency(value),
-    },
-    {
       key: 'received_at',
-      label: 'Received',
-      width: '16%',
+      label: 'Receipt Date',
+      width: '20%',
       align: 'center' as const,
       render: (value: string) => formatDate(value),
     },
     {
       key: 'expiration_date',
       label: 'Expires',
-      width: '14%',
+      width: '20%',
       align: 'center' as const,
       render: (value: string | undefined) => (value ? formatDate(value) : 'N/A'),
     },
@@ -98,9 +89,9 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
             <Text fw={700} size="lg">
               Stock Entries
             </Text>
-            <Text size="sm" c="dimmed">
+            {/* <Text size="sm" c="dimmed">
               All stock entries for this product
-            </Text>
+            </Text> */}
           </Stack>
           <Badge variant="light">{entries.length} entries</Badge>
         </Group>
@@ -112,7 +103,7 @@ export const StockEntriesByProductCard: React.FC<StockEntriesByProductCardProps>
             columns={columns}
             data={entries}
             actionsColumnWidth={110}
-            onRowClick={(entry: StockEntry) => navigate(ROUTES.stockEntryDetail(entry.id))}
+            tableMinWidth={900}
             renderRowActions={(row: StockEntry) => (
               <Group gap={4} wrap="nowrap" justify="center">
                 <Tooltip label="Edit stock entry">

@@ -11,7 +11,7 @@ import { ROUTES } from '@/app/router/route-paths';
 export const NAV_ITEMS = [
   { label: 'Dashboard', href: ROUTES.dashboard, icon: IconDashboard },
   { label: 'Products', href: ROUTES.products, icon: IconPackage },
-  { label: 'Stock', href: ROUTES.stockEntries, icon: IconPackages },
+  { label: 'Stocks', href: ROUTES.stocks, icon: IconPackages },
   {
     label: 'Purchase Orders',
     href: ROUTES.purchaseOrders,

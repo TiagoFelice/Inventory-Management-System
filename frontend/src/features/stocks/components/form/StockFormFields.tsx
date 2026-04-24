@@ -5,7 +5,6 @@ import type { UseFormReturnType } from '@mantine/form';
 export interface StockFormValues {
   product: string;
   quantity_received: number;
-  unit_cost: number;
   source_type: string;
   received_at: string;
   expiration_date: string;
@@ -17,6 +16,7 @@ interface StockFormFieldsProps {
   isLoadingProducts?: boolean;
   disabled?: boolean;
   showSourceType?: boolean;
+  disableSourceType?: boolean;
 }
 
 export const StockFormFields: React.FC<StockFormFieldsProps> = ({
@@ -25,6 +25,7 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
   isLoadingProducts = false,
   disabled = false,
   showSourceType = true,
+  disableSourceType = false,
 }) => {
   return (
     <Stack gap="md">
@@ -47,7 +48,7 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
             { value: 'purchase_order', label: 'Purchase Order' },
           ]}
           {...form.getInputProps('source_type')}
-          disabled={disabled}
+          disabled={disabled || disableSourceType}
           required
         />
       ) : null}
@@ -57,16 +58,6 @@ export const StockFormFields: React.FC<StockFormFieldsProps> = ({
         placeholder="Enter quantity"
         min={1}
         {...form.getInputProps('quantity_received')}
-        disabled={disabled}
-        required
-      />
-
-      <NumberInput
-        label="Unit Cost"
-        placeholder="0.00"
-        min={0}
-        step={0.01}
-        {...form.getInputProps('unit_cost')}
         disabled={disabled}
         required
       />

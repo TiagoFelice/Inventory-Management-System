@@ -3,7 +3,7 @@ import { ActionIcon, Group, Tooltip } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { DataTable } from '@components/ui/DataTable';
 import { ListTableCard } from '@components/ui/ListTableCard';
-import { formatDate, formatCurrency } from '@shared/utils/formatting';
+import { formatDate } from '@shared/utils/formatting';
 import type { StockEntry } from '../../stock.types';
 
 interface StockTableProps {
@@ -36,16 +36,9 @@ export const StockTable: React.FC<StockTableProps> = ({
       align: 'center' as const,
     },
     {
-      key: 'unit_cost',
-      label: 'Cost',
-      width: '15%',
-      align: 'center' as const,
-      render: (value: number) => formatCurrency(value),
-    },
-    {
       key: 'expiration_date',
       label: 'Expires',
-      width: '18%',
+      width: '33%',
       align: 'center' as const,
       render: (value: string) => (value ? formatDate(value) : 'N/A'),
     },

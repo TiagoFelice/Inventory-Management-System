@@ -7,7 +7,6 @@ export interface StockEntry {
   quantity_received: number;
   quantity_available: number;
   quantity_sold?: number;
-  unit_cost: number;
   source_type: 'manual' | 'purchase_order';
   source_reference_id?: number;
   purchase_order_id?: number;
@@ -22,7 +21,6 @@ export interface StockEntry {
 export interface CreateStockPayload {
   product: number;
   quantity_received: number;
-  unit_cost: number;
   source_type: 'manual' | 'purchase_order';
   received_at: string;
   expiration_date?: string;
@@ -32,9 +30,25 @@ export interface CreateStockPayload {
 export interface StockAllocation {
   id: number;
   stock_entry: number;
-  sales_order_item: number;
+  sales_order_item?: number | null;
+  sales_order_id?: number | null;
+  sales_order_code?: string;
   quantity_allocated: number;
-  allocated_at: string;
+  type: 'sale' | 'expired' | 'other';
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateStockAllocationPayload {
+  quantity_allocated: number;
+  type: 'sale' | 'expired' | 'other';
+  notes?: string | null;
+}
+
+export interface CreateStockAllocationPayload extends UpdateStockAllocationPayload {
+  stock_entry: number;
+  sales_order_item?: number | null;
 }
 
 export interface StockAllocationDetail {
@@ -51,7 +65,6 @@ export interface StockEntryAllocationDetailResponse {
   quantity_received: number;
   quantity_available: number;
   quantity_allocated: number;
-  unit_cost: number;
   allocations: StockAllocationDetail[];
 }
 
@@ -60,4 +73,11 @@ export interface StockListResponse {
   next?: string;
   previous?: string;
   results: StockEntry[];
+}
+
+export interface StockAllocationListResponse {
+  count: number;
+  next?: string;
+  previous?: string;
+  results: StockAllocation[];
 }

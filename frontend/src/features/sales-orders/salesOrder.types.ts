@@ -3,6 +3,7 @@ import type { PaginatedResponse } from '@/shared/types/api.types';
 export interface SalesOrderItem {
   id: number;
   sales_order: number;
+  sales_order_code?: string;
   product: number;
   product_name?: string;
   quantity: number;
@@ -11,6 +12,11 @@ export interface SalesOrderItem {
   total_cost: number;
   profit: number;
   margin_percent: number;
+  allocations?: Array<{
+    id: number;
+    quantity_allocated: number;
+    type: 'sale' | 'expired' | 'other';
+  }>;
 }
 
 export interface SalesOrder {
@@ -68,3 +74,4 @@ export interface ConfirmSalesOrderAllocationResponse {
 }
 
 export type SalesOrderListResponse = PaginatedResponse<SalesOrder>;
+export type SalesOrderItemListResponse = PaginatedResponse<SalesOrderItem>;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { ROUTES } from './route-paths';
 
@@ -95,8 +95,12 @@ export const router = createBrowserRouter([
         element: <ProductDetailPage />,
       },
       {
-        path: ROUTES.stockEntries,
+        path: ROUTES.stocks,
         element: <StocksPage />,
+      },
+      {
+        path: '/stock-entries',
+        element: <Navigate to={ROUTES.stocks} replace />,
       },
       {
         path: '/stock-details/:id',

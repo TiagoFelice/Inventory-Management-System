@@ -38,6 +38,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T, index: number) => void;
   renderRowActions?: (row: T, index: number) => React.ReactNode;
   actionsColumnWidth?: string | number;
+  tableMinWidth?: string | number;
 }
 
 const actionsCellStyle = {
@@ -60,6 +61,7 @@ export const DataTable = React.forwardRef<HTMLTableElement, DataTableProps<any>>
       isPaginated,
       renderRowActions,
       actionsColumnWidth,
+      tableMinWidth,
     },
     ref
   ) => {
@@ -116,34 +118,42 @@ export const DataTable = React.forwardRef<HTMLTableElement, DataTableProps<any>>
 
     return (
       <Stack gap="md">
-        <Table ref={ref} style={{ width: '100%' }}>
-          <Table.Thead>
-            <Table.Tr>
-              {columns.map((column) => (
-                <Table.Th
-                  key={String(column.key)}
-                  style={{
-                    ...(column.width ? { width: column.width } : undefined),
-                    ...(column.align ? { textAlign: column.align } : undefined),
-                  }}
-                >
-                  {column.label}
-                </Table.Th>
-              ))}
-              {((actions && actions.length > 0) || renderRowActions) && (
-                <Table.Th
-                  style={{
-                    ...actionsCellStyle,
-                    ...(actionsColumnWidth ? { width: actionsColumnWidth } : undefined),
-                  }}
-                >
-                  Actions
-                </Table.Th>
-              )}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <Table
+            ref={ref}
+            style={{
+              width: '100%',
+              ...(tableMinWidth ? { minWidth: tableMinWidth } : undefined),
+            }}
+          >
+            <Table.Thead>
+              <Table.Tr>
+                {columns.map((column) => (
+                  <Table.Th
+                    key={String(column.key)}
+                    style={{
+                      ...(column.width ? { width: column.width } : undefined),
+                      ...(column.align ? { textAlign: column.align } : undefined),
+                    }}
+                  >
+                    {column.label}
+                  </Table.Th>
+                ))}
+                {((actions && actions.length > 0) || renderRowActions) && (
+                  <Table.Th
+                    style={{
+                      ...actionsCellStyle,
+                      ...(actionsColumnWidth ? { width: actionsColumnWidth } : undefined),
+                    }}
+                  >
+                    Actions
+                  </Table.Th>
+                )}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>{rows}</Table.Tbody>
+          </Table>
+        </div>
 
         {isPaginated && totalPages > 1 && (
           <Group justify="center">
