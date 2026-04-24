@@ -113,7 +113,7 @@ const FinancialDashboard: React.FC = () => {
 
   if (items.length === 0) {
     return (
-      <Container size="xl" py="xl">
+      <Container fluid px="xl" py="xl">
         <Stack gap="lg">
           <Text fw={700} size="2rem">
             Financial Dashboard
@@ -167,7 +167,7 @@ const FinancialDashboard: React.FC = () => {
     : undefined;
 
   return (
-    <Container size="xl" py="xl">
+    <Container fluid px="xl" py="xl">
       <Stack gap="lg">
         <Stack gap={4}>
           <Text fw={700} size="2rem">

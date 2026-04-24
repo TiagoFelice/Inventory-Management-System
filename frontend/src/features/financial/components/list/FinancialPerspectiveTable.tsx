@@ -145,7 +145,7 @@ export const FinancialPerspectiveTable: React.FC<FinancialPerspectiveTableProps>
         </Group>
 
         <ScrollArea>
-          <Table striped highlightOnHover style={{ minWidth: 980 }}>
+          <Table striped highlightOnHover style={{ minWidth: 1180 }}>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th style={{ width: 56 }}>
