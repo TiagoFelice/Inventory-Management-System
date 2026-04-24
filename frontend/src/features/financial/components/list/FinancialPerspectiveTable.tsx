@@ -91,9 +91,9 @@ const renderPrimaryCell = (perspective: FinancialPerspective, item: FinancialPer
     const purchaseItem = item as PurchaseItemFinancialItem;
     return (
       <Stack gap={2}>
-        <Text fw={600}>{purchaseItem.product_name}</Text>
+        <Text fw={600}>{purchaseItem.order_number}</Text>
         <Group gap="xs">
-          <Badge variant="light">{purchaseItem.order_number}</Badge>
+          <Badge variant="light">{purchaseItem.product_name}</Badge>
           <Text size="xs" c="dimmed">
             {purchaseItem.product_sku}
           </Text>
