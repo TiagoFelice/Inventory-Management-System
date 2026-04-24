@@ -43,11 +43,14 @@ class SalesOrderItemViewSet(UserFilteredViewSet):
 
 class SalesOrderViewSet(UserFilteredViewSet):
     """API endpoint for managing sales orders."""
-    queryset = SalesOrder.objects.prefetch_related('items')
+    queryset = SalesOrder.objects.prefetch_related('items__product')
     serializer_class = SalesOrderSerializer
-    search_fields = ['order_number', 'customer_name']
+    search_fields = ['order_number', 'customer_name', 'items__product__name', 'items__product__sku']
     ordering_fields = ['sold_at', 'status', 'order_number']
     ordering = ['-sold_at']
+
+    def get_queryset(self):
+        return super().get_queryset().distinct()
     
     def get_serializer_class(self):
         """Use different serializers for different actions."""
