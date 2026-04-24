@@ -64,6 +64,7 @@ const PurchaseOrdersPage: React.FC = () => {
 
   return (
     <ListPageLayout
+      contentWidth="92%"
       header={
         <ListPageHeader
           title="Purchase Orders"
