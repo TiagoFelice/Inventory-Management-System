@@ -166,6 +166,7 @@ class ProductFinancialViewSet(BaseFinancialViewSet):
 
         allocations = StockAllocation.objects.filter(
             user=user,
+            type='sale',
             sales_order_item__sales_order__status__in=VALID_SALES_STATUSES,
             stock_entry__product__user=user,
         ).select_related('stock_entry__product', 'sales_order_item')
@@ -211,7 +212,7 @@ class ProductFinancialViewSet(BaseFinancialViewSet):
             )
             metrics['quantity_sold'] += allocation.quantity_allocated
             metrics['total_revenue'] += revenue
-            metrics['total_cogs'] += allocation.quantity_allocated * allocation.stock_entry.unit_cost
+            metrics['total_cogs'] += allocation.quantity_allocated * allocation.stock_entry.effective_unit_cost
 
         items = []
         for product in products:
@@ -271,6 +272,7 @@ class PurchaseItemFinancialViewSet(BaseFinancialViewSet):
         purchase_item_ids = [item.id for item in purchase_items]
         allocations = StockAllocation.objects.filter(
             user=user,
+            type='sale',
             sales_order_item__sales_order__status__in=VALID_SALES_STATUSES,
             stock_entry__source_type='purchase_order',
             stock_entry__source_reference_id__in=purchase_item_ids,
@@ -298,7 +300,7 @@ class PurchaseItemFinancialViewSet(BaseFinancialViewSet):
             )
             metrics['quantity_sold'] += allocation.quantity_allocated
             metrics['total_revenue'] += revenue
-            metrics['total_cogs'] += allocation.quantity_allocated * allocation.stock_entry.unit_cost
+            metrics['total_cogs'] += allocation.quantity_allocated * allocation.stock_entry.effective_unit_cost
 
         items = []
         for purchase_item in purchase_items:

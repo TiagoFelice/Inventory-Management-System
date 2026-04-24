@@ -82,9 +82,6 @@ class FinancialEndpointsTests(APITestCase):
             source_type='purchase_order',
             source_reference_id=self.purchase_item_a.id,
             quantity_received=Decimal('10.0000'),
-            quantity_available=Decimal('10.0000'),
-            unit_cost=Decimal('5.00'),
-            total_cost=Decimal('50.00'),
             received_at='2026-04-01T12:00:00Z',
         )
         self.stock_b = StockEntry.objects.create(
@@ -93,9 +90,6 @@ class FinancialEndpointsTests(APITestCase):
             source_type='purchase_order',
             source_reference_id=self.purchase_item_b.id,
             quantity_received=Decimal('20.0000'),
-            quantity_available=Decimal('20.0000'),
-            unit_cost=Decimal('2.00'),
-            total_cost=Decimal('40.00'),
             received_at='2026-04-01T12:00:00Z',
         )
 
@@ -182,9 +176,6 @@ class FinancialEndpointsTests(APITestCase):
             source_type='purchase_order',
             source_reference_id=other_purchase_item.id,
             quantity_received=Decimal('1.0000'),
-            quantity_available=Decimal('1.0000'),
-            unit_cost=Decimal('100.00'),
-            total_cost=Decimal('100.00'),
             received_at='2026-04-01T12:00:00Z',
         )
         other_sales_order = SalesOrder.objects.create(

@@ -4,10 +4,10 @@ from .models import StockEntry
 
 @admin.register(StockEntry)
 class StockEntryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'stock_identifier', 'user', 'product', 'quantity_available', 'unit_cost', 'received_at')
+    list_display = ('id', 'stock_identifier', 'user', 'product', 'quantity_available', 'received_at')
     list_filter = ('source_type', 'received_at', 'user')
     search_fields = ('id', 'stock_identifier', 'product__sku', 'product__name')
-    readonly_fields = ('stock_identifier', 'created_at', 'updated_at', 'quantity_sold')
+    readonly_fields = ('stock_identifier', 'created_at', 'updated_at', 'quantity_available', 'quantity_sold')
     fieldsets = (
         ('User & Ownership', {
             'fields': ('user',)
@@ -17,9 +17,6 @@ class StockEntryAdmin(admin.ModelAdmin):
         }),
         ('Quantities', {
             'fields': ('quantity_received', 'quantity_available', 'quantity_sold')
-        }),
-        ('Cost Information', {
-            'fields': ('unit_cost', 'total_cost')
         }),
         ('Dates & Expiration', {
             'fields': ('received_at', 'expiration_date')

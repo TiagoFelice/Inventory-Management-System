@@ -1,6 +1,5 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import F
 
 from .models import Product
 from .serializers import ProductSerializer
@@ -11,7 +10,7 @@ from apps.users.views import UserFilteredViewSet
 
 class ProductViewSet(UserFilteredViewSet):
     """API endpoint for managing products."""
-    queryset = Product.objects.all()
+    queryset = Product.objects.prefetch_related('stock_entries__allocations')
     serializer_class = ProductSerializer
     search_fields = ['sku', 'name', 'description', 'stock_entries__stock_identifier']
     filterset_fields = ['id', 'sku']
@@ -22,10 +21,13 @@ class ProductViewSet(UserFilteredViewSet):
     def stock_summary(self, request, pk=None):
         """Get stock summary for a product."""
         product = self.get_object()
-        stock_entries = product.stock_entries.values('id').annotate(
-            available=F('quantity_available'),
-            cost=F('unit_cost')
-        )
+        stock_entries = [
+            {
+                'id': entry.id,
+                'available': entry.quantity_available,
+            }
+            for entry in product.stock_entries.all()
+        ]
         
         return Response({
             'product_id': product.id,

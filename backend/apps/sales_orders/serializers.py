@@ -3,18 +3,82 @@ from .models import SalesOrder, SalesOrderItem, StockAllocation
 
 
 class StockAllocationSerializer(serializers.ModelSerializer):
+    sales_order_id = serializers.IntegerField(source='sales_order_item.sales_order_id', read_only=True)
+    sales_order_code = serializers.CharField(source='sales_order_item.sales_order.order_number', read_only=True)
+
     class Meta:
         model = StockAllocation
         fields = [
             'id', 'user', 'sales_order_item', 'stock_entry',
-            'quantity_allocated',
+            'sales_order_id', 'sales_order_code',
+            'quantity_allocated', 'type', 'notes',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
+    def validate(self, attrs):
+        instance = self.instance
+
+        if instance and 'stock_entry' in attrs and attrs['stock_entry'] != instance.stock_entry:
+            raise serializers.ValidationError({
+                'stock_entry': 'Changing the stock entry for an existing allocation is not allowed.'
+            })
+
+        if instance and 'sales_order_item' in attrs and attrs['sales_order_item'] != instance.sales_order_item:
+            raise serializers.ValidationError({
+                'sales_order_item': 'Changing the sales order item for an existing allocation is not allowed.'
+            })
+
+        stock_entry = attrs.get('stock_entry', instance.stock_entry if instance else None)
+        sales_order_item = attrs.get('sales_order_item', instance.sales_order_item if instance else None)
+        allocation_type = attrs.get('type', instance.type if instance else 'sale')
+        quantity_allocated = attrs.get(
+            'quantity_allocated',
+            instance.quantity_allocated if instance else None,
+        )
+
+        if stock_entry is None or quantity_allocated is None:
+            return attrs
+
+        current_quantity = instance.quantity_allocated if instance else 0
+        available_for_update = stock_entry.quantity_available + current_quantity
+        if quantity_allocated > available_for_update:
+            raise serializers.ValidationError({
+                'quantity_allocated': (
+                    f'Cannot allocate more than {available_for_update} from this stock entry.'
+                )
+            })
+
+        if sales_order_item and allocation_type != 'sale':
+            raise serializers.ValidationError({
+                'type': 'Allocations linked to a sales order item must remain sale allocations.'
+            })
+
+        if allocation_type == 'sale' and not sales_order_item:
+            raise serializers.ValidationError({
+                'type': 'Sale allocations must be linked to a sales order item.'
+            })
+
+        if sales_order_item:
+            sibling_allocations = sales_order_item.allocations.exclude(
+                pk=instance.pk if instance else None
+            )
+            sibling_total = sum(
+                allocation.quantity_allocated for allocation in sibling_allocations
+            )
+            if sibling_total + quantity_allocated > sales_order_item.quantity:
+                raise serializers.ValidationError({
+                    'quantity_allocated': (
+                        f'Allocation exceeds the sales order item quantity of {sales_order_item.quantity}.'
+                    )
+                })
+
+        return attrs
+
 
 class SalesOrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
+    sales_order_code = serializers.CharField(source='sales_order.order_number', read_only=True)
     total_cost = serializers.DecimalField(
         read_only=True,
         max_digits=15,
@@ -35,7 +99,7 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesOrderItem
         fields = [
-            'id', 'sales_order', 'product', 'product_name', 'quantity', 'unit_price',
+            'id', 'sales_order', 'sales_order_code', 'product', 'product_name', 'quantity', 'unit_price',
             'total_revenue', 'total_cost', 'profit', 'margin_percent',
             'allocations', 'created_at', 'updated_at'
         ]

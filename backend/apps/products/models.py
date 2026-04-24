@@ -52,23 +52,20 @@ class Product(models.Model):
     def available_quantity(self):
         """
         Calculate total available stock for this product.
-        Sum of all quantity_available from stock entries.
+        Sum of computed available quantity from stock entries.
         """
-        from apps.stocks.models import StockEntry
-        return StockEntry.objects.filter(product=self).aggregate(
-            total=models.Sum('quantity_available')
-        )['total'] or Decimal('0.00')
+        return sum(
+            (entry.quantity_available for entry in self.stock_entries.all()),
+            Decimal('0.00'),
+        )
     
     @property
     def total_inventory_value(self):
         """
         Calculate total value of available inventory.
-        Sum of (quantity_available * unit_cost) from stock entries.
+        Sum of (computed quantity_available * derived unit cost) from stock entries.
         """
-        from apps.stocks.models import StockEntry
-        return StockEntry.objects.filter(product=self).aggregate(
-            total=models.Sum(
-                models.F('quantity_available') * models.F('unit_cost'),
-                output_field=models.DecimalField()
-            )
-        )['total'] or Decimal('0.00')
+        return sum(
+            (entry.quantity_available * entry.effective_unit_cost for entry in self.stock_entries.all()),
+            Decimal('0.00'),
+        )

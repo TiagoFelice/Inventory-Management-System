@@ -16,11 +16,22 @@ class SalesOrderItemViewSet(UserFilteredViewSet):
     
     def get_queryset(self):
         """Get items only from user's sales orders."""
-        base_qs = SalesOrderItem.objects.filter(sales_order__user=self.request.user)
+        base_qs = SalesOrderItem.objects.filter(sales_order__user=self.request.user).select_related(
+            'sales_order',
+            'product',
+        ).prefetch_related('allocations')
         sales_order = self.request.query_params.get('sales_order')
+        product = self.request.query_params.get('product')
+        statuses = self.request.query_params.get('status')
         if sales_order:
             base_qs = base_qs.filter(sales_order_id=sales_order)
-        return base_qs
+        if product:
+            base_qs = base_qs.filter(product_id=product)
+        if statuses:
+            status_values = [value.strip() for value in statuses.split(',') if value.strip()]
+            if status_values:
+                base_qs = base_qs.filter(sales_order__status__in=status_values)
+        return base_qs.order_by('-sales_order__sold_at', '-sales_order__order_number', '-id')
     
     def perform_create(self, serializer):
         """Create item for user's sales order."""
@@ -141,6 +152,7 @@ class SalesOrderViewSet(UserFilteredViewSet):
                     sales_order_item=sales_item,
                     stock_entry=stock_entry,
                     quantity_allocated=quantity,
+                    type='sale',
                 )
                 created_allocations.append(allocation)
 
@@ -173,7 +185,8 @@ class SalesOrderViewSet(UserFilteredViewSet):
 
 class StockAllocationViewSet(UserFilteredViewSet):
     """API endpoint for stock allocations."""
-    queryset = StockAllocation.objects.select_related('sales_order_item', 'stock_entry')
+    queryset = StockAllocation.objects.select_related('sales_order_item__sales_order', 'stock_entry')
     serializer_class = StockAllocationSerializer
+    filterset_fields = ['stock_entry', 'stock_entry__product', 'type']
     ordering_fields = ['created_at']
     ordering = ['-created_at']

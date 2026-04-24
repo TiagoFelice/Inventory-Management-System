@@ -154,11 +154,19 @@ class StockAllocation(models.Model):
     The allocation records the cost basis at the time of sale.
     """
     
+    TYPE_CHOICES = [
+        ('sale', 'Sale'),
+        ('expired', 'Expired'),
+        ('other', 'Other'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_allocations')
     sales_order_item = models.ForeignKey(
         SalesOrderItem,
         on_delete=models.CASCADE,
-        related_name='allocations'
+        related_name='allocations',
+        blank=True,
+        null=True,
     )
     stock_entry = models.ForeignKey(
         StockEntry,
@@ -170,6 +178,8 @@ class StockAllocation(models.Model):
         decimal_places=4,
         validators=[MinValueValidator(Decimal('0.0001'))]
     )
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='sale')
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -182,14 +192,5 @@ class StockAllocation(models.Model):
         ]
     
     def __str__(self):
-        return f"Allocation: Stock Entry #{self.stock_entry_id} -> {self.sales_order_item.sales_order.order_number}"
-    
-    def save(self, *args, **kwargs):
-        """Reduce available quantity in stock entry on creation."""
-        # Reduce available quantity in stock entry
-        if self.pk is None:  # Only on creation
-            stock = self.stock_entry
-            stock.quantity_available -= self.quantity_allocated
-            stock.save()
-        
-        super().save(*args, **kwargs)
+        target = self.sales_order_item.sales_order.order_number if self.sales_order_item_id else self.type
+        return f"Allocation: Stock Entry #{self.stock_entry_id} -> {target}"

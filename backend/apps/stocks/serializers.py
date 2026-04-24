@@ -3,6 +3,11 @@ from .models import StockEntry
 
 
 class StockEntrySerializer(serializers.ModelSerializer):
+    quantity_available = serializers.DecimalField(
+        read_only=True,
+        max_digits=15,
+        decimal_places=4
+    )
     quantity_sold = serializers.DecimalField(
         read_only=True,
         max_digits=15,
@@ -39,23 +44,27 @@ class StockEntrySerializer(serializers.ModelSerializer):
         )
         return po_item.purchase_order.order_number if po_item else None
 
-    def create(self, validated_data):
-        # Manual entries start fully available when first received.
-        if 'quantity_available' not in validated_data:
-            validated_data['quantity_available'] = validated_data['quantity_received']
-        return super().create(validated_data)
-    
+    def validate(self, attrs):
+        instance = self.instance
+
+        if instance and 'source_type' in attrs and attrs['source_type'] != instance.source_type:
+            raise serializers.ValidationError({
+                'source_type': 'Changing the source type for an existing stock entry is not allowed.'
+            })
+
+        return attrs
+
     class Meta:
         model = StockEntry
         fields = [
             'id', 'user', 'product', 'stock_identifier', 'source_type',
             'source_reference_id', 'quantity_received', 'quantity_available',
-            'quantity_sold', 'unit_cost', 'total_cost', 'received_at',
+            'quantity_sold', 'received_at',
             'expiration_date', 'notes', 'purchase_order_id', 'purchase_order_number',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'user', 'stock_identifier', 'quantity_available', 'quantity_sold', 'total_cost',
+            'id', 'user', 'stock_identifier', 'quantity_available', 'quantity_sold',
             'purchase_order_id', 'purchase_order_number',
             'created_at', 'updated_at'
         ]

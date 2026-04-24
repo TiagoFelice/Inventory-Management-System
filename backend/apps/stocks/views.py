@@ -8,11 +8,19 @@ from .serializers import StockEntrySerializer
 
 class StockEntryViewSet(UserFilteredViewSet):
     """API endpoint for managing stock entries."""
-    queryset = StockEntry.objects.select_related('product', 'user')
+    queryset = StockEntry.objects.select_related('product', 'user').prefetch_related('allocations__sales_order_item__sales_order')
     serializer_class = StockEntrySerializer
     search_fields = ['product__sku', 'product__name']
-    ordering_fields = ['received_at', 'expiration_date', 'quantity_available']
+    filterset_fields = ['product', 'source_type']
+    ordering_fields = ['received_at', 'expiration_date', 'quantity_received']
     ordering = ['expiration_date', 'received_at']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        product_id = self.request.query_params.get('product')
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        return queryset
     
     @action(detail=True, methods=['get'])
     def allocation_detail(self, request, pk=None):
@@ -25,7 +33,6 @@ class StockEntryViewSet(UserFilteredViewSet):
             'stock_entry_id': entry.id,
             'quantity_received': entry.quantity_received,
             'quantity_available': entry.quantity_available,
-            'quantity_allocated': entry.quantity_sold,
-            'unit_cost': entry.unit_cost,
+            'quantity_allocated': entry.quantity_allocated_total,
             'allocations': StockAllocationSerializer(allocations, many=True).data,
         })

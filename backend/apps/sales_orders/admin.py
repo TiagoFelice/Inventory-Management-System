@@ -44,6 +44,6 @@ class SalesOrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(StockAllocation)
 class StockAllocationAdmin(admin.ModelAdmin):
-    list_display = ('stock_entry', 'sales_order_item', 'user', 'quantity_allocated')
-    list_filter = ('created_at', 'stock_entry', 'user')
+    list_display = ('stock_entry', 'sales_order_item', 'type', 'user', 'quantity_allocated')
+    list_filter = ('created_at', 'stock_entry', 'type', 'user')
     readonly_fields = ('created_at', 'updated_at')
