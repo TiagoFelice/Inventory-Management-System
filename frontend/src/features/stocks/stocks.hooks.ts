@@ -68,6 +68,7 @@ export const useCreateStockEntry = () => {
     mutationFn: (payload: CreateStockPayload) => stocksApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
     },
   });
 };
@@ -80,6 +81,7 @@ export const useUpdateStockEntry = () => {
       stocksApi.partial_update(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
       queryClient.invalidateQueries({
         queryKey: queryKeys.stocks.detail(variables.id),
       });
@@ -94,6 +96,7 @@ export const useDeleteStockEntry = () => {
     mutationFn: (id: number) => stocksApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
     },
   });
 };
