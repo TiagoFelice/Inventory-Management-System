@@ -116,6 +116,8 @@ export const useUpdateStockAllocation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.items() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
     },
   });
 };
@@ -130,6 +132,7 @@ export const useCreateStockAllocation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.items() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
     },
   });
 };
@@ -143,6 +146,8 @@ export const useDeleteStockAllocation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.items() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
     },
   });
 };

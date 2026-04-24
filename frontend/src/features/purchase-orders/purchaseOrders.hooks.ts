@@ -60,6 +60,9 @@ export const useUpdatePurchaseOrder = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.purchaseOrders.detail(variables.id),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
+      });
     },
   });
 };
@@ -72,6 +75,9 @@ export const useDeletePurchaseOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.purchaseOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
       });
     },
   });
@@ -140,6 +146,12 @@ export const useReceivePurchaseOrderWithEntries = () => {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.stocks.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
       });
     },
   });

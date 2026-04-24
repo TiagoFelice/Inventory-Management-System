@@ -72,6 +72,12 @@ export const useUpdateSalesOrder = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.salesOrders.detail(variables.id),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
+      });
     },
   });
 };
@@ -84,6 +90,12 @@ export const useDeleteSalesOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
       });
     },
   });
@@ -121,6 +133,15 @@ export const useConfirmSalesOrderWithAllocations = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.stocks.all,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
+      });
     },
   });
 };
@@ -136,6 +157,12 @@ export const useCancelSalesOrder = () => {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.salesOrders.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
       });
     },
   });
