@@ -1,16 +1,27 @@
 import React from 'react';
-import { Paper, Stack, Table, Text } from '@mantine/core';
+import { Anchor, Paper, Stack, Table, Text } from '@mantine/core';
+import { Link as RouterLink } from 'react-router-dom';
+import { ROUTES } from '@/app/router/route-paths';
 import { formatCurrency } from '@shared/utils/formatting';
 import type { PurchaseOrderItem } from '../../purchaseOrder.types';
 
 interface PurchaseOrderDetailItemsProps {
   items: PurchaseOrderItem[];
+  orderStatus: 'draft' | 'confirmed' | 'received' | 'cancelled';
 }
 
 export const PurchaseOrderDetailItems: React.FC<PurchaseOrderDetailItemsProps> = ({
   items,
+  orderStatus,
 }) => {
-  const totalCost = items.reduce((sum, item) => sum + item.total_cost, 0);
+  const totalCost = items.reduce((sum, item) => sum + Number(item.total_cost), 0);
+  const shouldLinkToStock = orderStatus === 'received';
+  const getProductLabel = (item: PurchaseOrderItem) => {
+    if (item.product && typeof item.product === 'object' && 'name' in item.product) {
+      return item.product.name;
+    }
+    return item.product_name || 'Unknown product';
+  };
 
   return (
     <Stack gap="lg" style={{ width: '100%' }}>
@@ -24,29 +35,41 @@ export const PurchaseOrderDetailItems: React.FC<PurchaseOrderDetailItemsProps> =
           <Table striped style={{ width: '100%', minWidth: 600 }}>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th style={{ width: '40%', textAlign: 'left' }}>Product</Table.Th>
-                <Table.Th style={{ width: '20%', textAlign: 'center' }}>Quantity</Table.Th>
-                <Table.Th style={{ width: '20%', textAlign: 'center' }}>Unit Cost</Table.Th>
-                <Table.Th style={{ width: '20%', textAlign: 'right' }}>Subtotal</Table.Th>
+                <Table.Th style={{ width: '32%', textAlign: 'left' }}>Product</Table.Th>
+                <Table.Th style={{ width: '16%', textAlign: 'center' }}>Quantity</Table.Th>
+                <Table.Th style={{ width: '16%', textAlign: 'center' }}>Unit Cost</Table.Th>
+                <Table.Th style={{ width: '18%', textAlign: 'right' }}>Subtotal</Table.Th>
+                {shouldLinkToStock ? (
+                  <Table.Th style={{ width: '18%', textAlign: 'center' }}>View Stock</Table.Th>
+                ) : null}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {items.map((item) => (
                 <Table.Tr key={item.id}>
-                  <Table.Td style={{ textAlign: 'left' }}>
-                    {item.product.name}
-                  </Table.Td>
+                  <Table.Td style={{ textAlign: 'left' }}>{getProductLabel(item)}</Table.Td>
                   <Table.Td style={{ textAlign: 'center' }}>{item.quantity}</Table.Td>
                   <Table.Td style={{ textAlign: 'center' }}>{formatCurrency(item.unit_cost)}</Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>
                     {formatCurrency(item.total_cost)}
                   </Table.Td>
+                  {shouldLinkToStock ? (
+                    <Table.Td style={{ textAlign: 'center' }}>
+                      <Anchor
+                        component={RouterLink}
+                        to={ROUTES.stockDetail(item.product.id)}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        View Stock
+                      </Anchor>
+                    </Table.Td>
+                  ) : null}
                 </Table.Tr>
               ))}
             </Table.Tbody>
             <Table.Tfoot>
               <Table.Tr>
-                <Table.Td colSpan={3} style={{ textAlign: 'right', fontWeight: 600 }}>
+                <Table.Td colSpan={shouldLinkToStock ? 4 : 3} style={{ textAlign: 'right', fontWeight: 600 }}>
                   Total:
                 </Table.Td>
                 <Table.Td style={{ textAlign: 'right', fontWeight: 700, fontSize: 16 }}>

@@ -15,8 +15,10 @@ import {
   IconCheck,
   IconX,
   IconChevronDown,
+  IconRotateClockwise,
 } from '@tabler/icons-react';
 import { formatDate, formatCurrency } from '@shared/utils/formatting';
+import { normalizeStatus } from '@components/ui/StatusBadge';
 import type { PurchaseOrder } from '../../purchaseOrder.types';
 
 interface PurchaseOrderDetailHeaderProps {
@@ -26,10 +28,11 @@ interface PurchaseOrderDetailHeaderProps {
   onConfirm: (e?: React.MouseEvent) => void;
   onCancel: (e?: React.MouseEvent) => void;
   onReceive: (e?: React.MouseEvent) => void;
-  onBack: () => void;
+  onReopen: (e?: React.MouseEvent) => void;
   confirmLoading?: boolean;
   cancelLoading?: boolean;
   receiveLoading?: boolean;
+  reopenLoading?: boolean;
 }
 
 export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps> = ({
@@ -39,10 +42,14 @@ export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps>
   onConfirm,
   onCancel,
   onReceive,
+  onReopen,
   confirmLoading = false,
   cancelLoading = false,
   receiveLoading = false,
+  reopenLoading = false,
 }) => {
+  const normalizedStatus = normalizeStatus(order.status);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
@@ -109,17 +116,17 @@ export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps>
                   }}
                 >
                   <Badge
-                    color={getStatusColor(order.status)}
+                    color={getStatusColor(normalizedStatus)}
                     size="lg"
                   >
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
                   </Badge>
                   <IconChevronDown size={18} style={{ opacity: 0.6 }} />
                 </Group>
               </Tooltip>
             </Menu.Target>
             <Menu.Dropdown>
-              {order.status === 'draft' && (
+              {normalizedStatus === 'draft' && (
                 <>
                   <Menu.Item
                     leftSection={<IconCheck size={14} />}
@@ -138,7 +145,7 @@ export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps>
                   </Menu.Item>
                 </>
               )}
-              {order.status === 'confirmed' && (
+              {normalizedStatus === 'confirmed' && (
                 <>
                   <Menu.Item
                     leftSection={<IconCheck size={14} />}
@@ -156,6 +163,15 @@ export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps>
                     Cancel Order
                   </Menu.Item>
                 </>
+              )}
+              {normalizedStatus === 'received' && (
+                <Menu.Item
+                  leftSection={<IconRotateClockwise size={14} />}
+                  onClick={onReopen}
+                  disabled={reopenLoading}
+                >
+                  Reopen Order
+                </Menu.Item>
               )}
             </Menu.Dropdown>
           </Menu>

@@ -16,6 +16,7 @@ import { IconAlertCircle, IconPlus, IconTrash } from '@tabler/icons-react';
 import { formatDate, formatNumber } from '@shared/utils/formatting';
 import type {
   PurchaseOrder,
+  PurchaseOrderItem,
   ReceivePurchaseOrderEntriesPayload,
 } from '../../purchaseOrder.types';
 
@@ -48,6 +49,12 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
 }) => {
   const [entriesByItem, setEntriesByItem] = useState<Record<number, ReceiveEntryDraft[]>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
+  const getProductLabel = (item: PurchaseOrderItem) => {
+    if (item.product && typeof item.product === 'object' && 'name' in item.product) {
+      return item.product.name;
+    }
+    return item.product_name || 'Unknown product';
+  };
 
   const items = useMemo(() => order.items || [], [order.items]);
 
@@ -111,14 +118,14 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
 
       if (Math.abs(totalReceived - Number(item.quantity)) > 0.0001) {
         setValidationError(
-          `Entries for ${item.product.name} must total ${formatNumber(item.quantity, 4)}.`
+          `Entries for ${getProductLabel(item)} must total ${formatNumber(item.quantity, 4)}.`
         );
         return;
       }
 
       for (const entry of itemEntries) {
         if (entry.quantity_received <= 0) {
-          setValidationError(`All entry quantities for ${item.product.name} must be greater than zero.`);
+          setValidationError(`All entry quantities for ${getProductLabel(item)} must be greater than zero.`);
           return;
         }
 
@@ -159,7 +166,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 <Stack gap="sm">
                   <Group justify="space-between">
                     <div>
-                      <Text fw={600}>{item.product.name}</Text>
+                      <Text fw={600}>{getProductLabel(item)}</Text>
                       <Text size="sm" c="dimmed">
                         Required quantity: {formatNumber(item.quantity, 4)} at {formatNumber(item.unit_cost, 2)} unit cost
                       </Text>

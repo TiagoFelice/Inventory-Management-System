@@ -172,6 +172,14 @@ class SalesOrderCreateUpdateSerializer(serializers.ModelSerializer):
             'total_profit', 'items', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'user', 'total_revenue', 'total_cost', 'total_profit', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        instance = self.instance
+        if instance and instance.status == 'confirmed' and 'items' in self.initial_data:
+            raise serializers.ValidationError({
+                'items': 'Items cannot be changed once a sales order is confirmed.'
+            })
+        return attrs
     
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])

@@ -18,6 +18,7 @@ interface PurchaseOrderItemsTableProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   isLoading?: boolean;
+  isLocked?: boolean;
 }
 
 export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = ({
@@ -27,6 +28,7 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
   onAddItem,
   onRemoveItem,
   isLoading = false,
+  isLocked = false,
 }) => {
   const productOptions = products
     .filter((product) => product?.id !== undefined && product?.id !== null)
@@ -79,15 +81,17 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                           const product = products.find((p) => p.id.toString() === value);
                           onItemChange(index, 'product', product || null);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                         searchable
                       />
                     </Table.Td>
                     <Table.Td>
                       <NumberInput
                         value={item.quantity}
-                        onChange={(value) => onItemChange(index, 'quantity', value || 0)}
-                        disabled={isLoading}
+                        onChange={(value) =>
+                          onItemChange(index, 'quantity', typeof value === 'number' ? value : Number(value) || 0)
+                        }
+                        disabled={isLoading || isLocked}
                         min={0}
                         step={1}
                         style={{ textAlign: 'center' }}
@@ -96,8 +100,10 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                     <Table.Td>
                       <NumberInput
                         value={item.unit_cost}
-                        onChange={(value) => onItemChange(index, 'unit_cost', value || 0)}
-                        disabled={isLoading}
+                        onChange={(value) =>
+                          onItemChange(index, 'unit_cost', typeof value === 'number' ? value : Number(value) || 0)
+                        }
+                        disabled={isLoading || isLocked}
                         min={0}
                         step={0.01}
                         style={{ textAlign: 'center' }}
@@ -111,7 +117,7 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                         color="red"
                         variant="subtle"
                         onClick={() => onRemoveItem(index)}
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                       >
                         <IconTrash size={16} />
                       </ActionIcon>
@@ -137,7 +143,7 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
       <Button
         leftSection={<IconPlus size={16} />}
         onClick={onAddItem}
-        disabled={isLoading}
+        disabled={isLoading || isLocked}
         variant="default"
       >
         Add Item

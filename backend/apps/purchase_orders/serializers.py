@@ -57,6 +57,14 @@ class PurchaseOrderCreateUpdateSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'user', 'total_cost', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        instance = self.instance
+        if instance and instance.status == 'received' and 'items' in self.initial_data:
+            raise serializers.ValidationError({
+                'items': 'Items cannot be changed once a purchase order is received.'
+            })
+        return attrs
     
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])

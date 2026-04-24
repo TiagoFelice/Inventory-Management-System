@@ -5,9 +5,7 @@ import {
   Stack,
   Button,
   Group,
-  Select,
   Alert,
-  Modal,
   Text,
 } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
@@ -15,9 +13,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   usePurchaseOrder,
   useUpdatePurchaseOrder,
-  useConfirmPurchaseOrder,
-  useCancelPurchaseOrder,
-  useReceivePurchaseOrderWithEntries,
 } from '../purchaseOrders.hooks';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
@@ -25,9 +20,7 @@ import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
 import { PurchaseOrderForm } from '../components/form/PurchaseOrderForm';
 import { PurchaseOrderItemsTable, type OrderItem } from '../components/form/PurchaseOrderItemsTable';
-import { PurchaseOrderReceiveModal } from '../components/form/PurchaseOrderReceiveModal';
 import { ActionErrorAlert } from '../components/list/ActionErrorAlert';
-import type { ReceivePurchaseOrderEntriesPayload } from '../purchaseOrder.types';
 
 const PurchaseOrderEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,9 +29,6 @@ const PurchaseOrderEditPage: React.FC = () => {
 
   const orderQuery = usePurchaseOrder(orderId);
   const updateMutation = useUpdatePurchaseOrder();
-  const confirmMutation = useConfirmPurchaseOrder();
-  const cancelMutation = useCancelPurchaseOrder();
-  const receiveMutation = useReceivePurchaseOrderWithEntries();
   const productsQuery = useProducts();
   const products = productsQuery.data?.results || [];
 
@@ -57,25 +47,6 @@ const PurchaseOrderEditPage: React.FC = () => {
     message: '',
   });
 
-  const [statusConfirmation, setStatusConfirmation] = useState<{
-    isOpen: boolean;
-    newStatus: string | null;
-    currentStatus: string | null;
-  }>({
-    isOpen: false,
-    newStatus: null,
-    currentStatus: null,
-  });
-  const [showReceiveModal, setShowReceiveModal] = useState(false);
-
-  const isUnusualWorkflow = (currentStatus: string, newStatus: string): boolean => {
-    // Normal: draft -> confirmed -> received, or draft/confirmed -> cancelled
-    if (newStatus === 'confirmed') return currentStatus !== 'draft';
-    if (newStatus === 'cancelled') return !['draft', 'confirmed'].includes(currentStatus);
-    if (newStatus === 'received') return currentStatus !== 'confirmed';
-    return false;
-  };
-
   React.useEffect(() => {
     if (orderQuery.data) {
       const order = orderQuery.data;
@@ -89,8 +60,8 @@ const PurchaseOrderEditPage: React.FC = () => {
         setItems(
           order.items.map((item) => ({
             product: item.product ?? null,
-            quantity: item.quantity,
-            unit_cost: item.unit_cost,
+            quantity: Number(item.quantity),
+            unit_cost: Number(item.unit_cost),
           }))
         );
       } else {
@@ -117,105 +88,44 @@ const PurchaseOrderEditPage: React.FC = () => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleStatusDropdownChange = async (newStatus: string | null) => {
-    if (!newStatus || !orderQuery.data) return;
-    
-    const currentStatus = orderQuery.data.status;
-
-    if (newStatus === currentStatus) {
-      return;
-    }
-
-    if (newStatus === 'received') {
-      setShowReceiveModal(true);
-      return;
-    }
-    
-    // Check if it's an unusual workflow
-    if (isUnusualWorkflow(currentStatus, newStatus)) {
-      setStatusConfirmation({
-        isOpen: true,
-        newStatus,
-        currentStatus,
-      });
-      return;
-    }
-    
-    // Normal workflow, proceed with status change
-    await performStatusChange(newStatus);
-  };
-
-  const performStatusChange = async (newStatus: string) => {
-    if (!orderId || !orderQuery.data) return;
-
-    const currentStatus = orderQuery.data.status;
-
-    try {
-      if (newStatus === 'confirmed' && currentStatus === 'draft') {
-        await confirmMutation.mutateAsync(orderId);
-      } else if (newStatus === 'cancelled' && ['draft', 'confirmed'].includes(currentStatus)) {
-        await cancelMutation.mutateAsync(orderId);
-      } else {
-        setErrorAlert({
-          isOpen: true,
-          message: `Cannot change from ${currentStatus} to ${newStatus}`,
-        });
-      }
-      orderQuery.refetch();
-      setStatusConfirmation({ isOpen: false, newStatus: null, currentStatus: null });
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to change status';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleReceiveWithEntries = async (payload: ReceivePurchaseOrderEntriesPayload) => {
-    if (!orderId) return;
-
-    try {
-      await receiveMutation.mutateAsync({ id: orderId, payload });
-      setShowReceiveModal(false);
-      await orderQuery.refetch();
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'Failed to receive order';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleStatusConfirmationProceed = async () => {
-    if (!statusConfirmation.newStatus) return;
-    setStatusConfirmation({ isOpen: false, newStatus: null, currentStatus: null });
-    await performStatusChange(statusConfirmation.newStatus);
-  };
-
   const handleSubmit = async () => {
     if (!orderId) return;
+    const isItemsLocked = orderQuery.data?.status === 'received';
 
-    // Validation
     if (!formData.order_number.trim()) {
       alert('Order number is required');
       return;
     }
 
     const validItems = items.filter((item) => item.product && item.quantity > 0);
-    if (validItems.length === 0) {
+    if (!isItemsLocked && validItems.length === 0) {
       alert('At least one item is required');
       return;
     }
 
     try {
+      const payload: {
+        order_number: string;
+        supplier_name?: string;
+        ordered_at: string;
+        items?: Array<{ product: number; quantity: number; unit_cost: number }>;
+      } = {
+        order_number: formData.order_number,
+        supplier_name: formData.supplier_name || undefined,
+        ordered_at: new Date(formData.ordered_at).toISOString(),
+      };
+
+      if (!isItemsLocked) {
+        payload.items = validItems.map((item) => ({
+          product: item.product!.id,
+          quantity: item.quantity,
+          unit_cost: item.unit_cost,
+        }));
+      }
+
       await updateMutation.mutateAsync({
         id: orderId,
-        payload: {
-          order_number: formData.order_number,
-          supplier_name: formData.supplier_name || undefined,
-          ordered_at: new Date(formData.ordered_at).toISOString(),
-          items: validItems.map((item) => ({
-            product: item.product!.id,
-            quantity: item.quantity,
-            unit_cost: item.unit_cost,
-          })),
-        },
+        payload,
       });
       navigate(`/purchase-orders/${orderId}`);
     } catch (error) {
@@ -239,6 +149,7 @@ const PurchaseOrderEditPage: React.FC = () => {
   const errorMessage = updateMutation.error
     ? getErrorMessage(updateMutation.error)
     : null;
+  const isItemsLocked = orderQuery.data.status === 'received';
 
   return (
     <Container size="lg" py="xl">
@@ -259,34 +170,6 @@ const PurchaseOrderEditPage: React.FC = () => {
               isLoading={updateMutation.isPending}
             />
 
-            {/* Status Section */}
-            <div>
-              <Text size="sm" c="dimmed" fw={500} mb={8}>
-                Status
-              </Text>
-              <Select
-                label="Change Order Status"
-                placeholder="Select status"
-                data={[
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'confirmed', label: 'Confirmed' },
-                  { value: 'received', label: 'Received' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ]}
-                value={orderQuery.data?.status || null}
-                onChange={handleStatusDropdownChange}
-                disabled={
-                  updateMutation.isPending ||
-                  confirmMutation.isPending ||
-                  cancelMutation.isPending ||
-                  receiveMutation.isPending
-                }
-              />
-              <Text size="xs" c="dimmed" mt={4}>
-                Received status requires manual stock-entry splits. Other status changes still use the usual workflow endpoints.
-              </Text>
-            </div>
-
             <PurchaseOrderItemsTable
               items={items}
               products={products}
@@ -294,9 +177,15 @@ const PurchaseOrderEditPage: React.FC = () => {
               onAddItem={handleAddItem}
               onRemoveItem={handleRemoveItem}
               isLoading={updateMutation.isPending}
+              isLocked={isItemsLocked}
             />
 
-            {/* Actions */}
+            {isItemsLocked ? (
+              <Text size="sm" c="dimmed">
+                Order items are locked because this purchase order is already received.
+              </Text>
+            ) : null}
+
             <Group justify="flex-end" pt="xl">
               <Button
                 variant="light"
@@ -315,65 +204,11 @@ const PurchaseOrderEditPage: React.FC = () => {
           </Stack>
         </Paper>
 
-        {/* Error Alert Modal */}
         <ActionErrorAlert
           opened={errorAlert.isOpen}
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
-
-        {orderQuery.data ? (
-          <PurchaseOrderReceiveModal
-            opened={showReceiveModal}
-            order={orderQuery.data}
-            onClose={() => setShowReceiveModal(false)}
-            onConfirm={handleReceiveWithEntries}
-            isLoading={receiveMutation.isPending}
-          />
-        ) : null}
-
-        {/* Unusual Workflow Confirmation Modal */}
-        <Modal
-          opened={statusConfirmation.isOpen}
-          onClose={() =>
-            setStatusConfirmation({ isOpen: false, newStatus: null, currentStatus: null })
-          }
-          title="Confirm Unusual Status Change"
-          centered
-        >
-          <Stack>
-            <Alert icon={<IconAlertCircle size={16} />} c="yellow">
-              <Text fw={500} mb={4}>
-                This status change is not part of the usual workflow.
-              </Text>
-              <Text size="sm">
-                Changing from <strong>{statusConfirmation.currentStatus}</strong> to{' '}
-                <strong>{statusConfirmation.newStatus}</strong>. Are you sure you want to proceed?
-              </Text>
-            </Alert>
-            <Group justify="flex-end">
-              <Button
-                variant="light"
-                onClick={() =>
-                  setStatusConfirmation({ isOpen: false, newStatus: null, currentStatus: null })
-                }
-              >
-                Cancel
-              </Button>
-              <Button
-                color="yellow"
-                loading={
-                  confirmMutation.isPending ||
-                  cancelMutation.isPending ||
-                  receiveMutation.isPending
-                }
-                onClick={handleStatusConfirmationProceed}
-              >
-                Proceed Anyway
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
       </Stack>
     </Container>
   );

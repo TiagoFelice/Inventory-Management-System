@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from decimal import Decimal
+from django.db import transaction
 
 from apps.users.views import UserFilteredViewSet
 from apps.stocks.models import StockEntry
@@ -184,6 +185,52 @@ class SalesOrderViewSet(UserFilteredViewSet):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'])
+    def reopen(self, request, pk=None):
+        """Reopen a confirmed sales order back to draft."""
+        so = self.get_object()
+
+        if so.status != 'confirmed':
+            return Response(
+                {'detail': 'Only confirmed sales orders can be reopened.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        allocations = StockAllocation.objects.filter(
+            user=request.user,
+            sales_order_item__sales_order=so,
+            type='sale',
+        )
+        delete_allocations = request.data.get('delete_allocations', False)
+
+        deleted_allocations = 0
+        if allocations.exists() and not delete_allocations:
+            return Response(
+                {
+                    'detail': 'This sales order already has stock allocations. Reopening requires deleting them.',
+                    'requires_confirmation': True,
+                    'allocation_count': allocations.count(),
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            if allocations.exists():
+                deleted_allocations = allocations.count()
+                allocations.delete()
+
+            so.status = 'draft'
+            so.save(update_fields=['status', 'updated_at'])
+
+        return Response(
+            {
+                'status': 'success',
+                'message': 'Sales order reopened.',
+                'deleted_allocations': deleted_allocations,
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class StockAllocationViewSet(UserFilteredViewSet):

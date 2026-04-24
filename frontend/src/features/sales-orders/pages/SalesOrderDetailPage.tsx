@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Container, Group, Stack } from '@mantine/core';
+import { Button, Container, Group, Modal, Stack, Text } from '@mantine/core';
+import type { AxiosError } from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
@@ -7,6 +8,7 @@ import {
   useCancelSalesOrder,
   useConfirmSalesOrderWithAllocations,
   useDeleteSalesOrder,
+  useReopenSalesOrder,
   useSalesOrder,
 } from '@features/sales-orders/salesOrders.hooks';
 import type { ConfirmSalesOrderAllocationPayload } from '@features/sales-orders/salesOrder.types';
@@ -22,6 +24,8 @@ const SalesOrderDetailPage: React.FC = () => {
   const orderId = id ? parseInt(id, 10) : null;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAllocationModal, setShowAllocationModal] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenMessage, setReopenMessage] = useState('');
   const [errorAlert, setErrorAlert] = useState<{ isOpen: boolean; message: string }>({
     isOpen: false,
     message: '',
@@ -31,6 +35,17 @@ const SalesOrderDetailPage: React.FC = () => {
   const deleteMutation = useDeleteSalesOrder();
   const confirmMutation = useConfirmSalesOrderWithAllocations();
   const cancelMutation = useCancelSalesOrder();
+  const reopenMutation = useReopenSalesOrder();
+
+  const getErrorDetail = (error: unknown) => {
+    const axiosError = error as AxiosError<{
+      detail?: string;
+      error?: string;
+      requires_confirmation?: boolean;
+      allocation_count?: number;
+    }>;
+    return axiosError.response?.data;
+  };
 
   const handleDelete = async () => {
     if (!orderId) return;
@@ -81,6 +96,30 @@ const SalesOrderDetailPage: React.FC = () => {
     }
   };
 
+  const handleReopenOrder = async (deleteAllocations = false) => {
+    try {
+      await reopenMutation.mutateAsync({ id: orderId!, deleteAllocations });
+      setShowReopenModal(false);
+      setReopenMessage('');
+      await query.refetch();
+    } catch (error) {
+      const errorData = getErrorDetail(error);
+      if (errorData?.requires_confirmation) {
+        const count = errorData.allocation_count || 0;
+        setReopenMessage(
+          `This sales order still has ${count} stock allocation${count === 1 ? '' : 's'}. Reopening it will delete them. Do you want to continue?`
+        );
+        setShowReopenModal(true);
+        return;
+      }
+      const message =
+        errorData?.detail ||
+        errorData?.error ||
+        'Failed to reopen order';
+      setErrorAlert({ isOpen: true, message });
+    }
+  };
+
   if (query.isLoading) {
     return <LoadingState message="Loading sales order..." />;
   }
@@ -101,11 +140,13 @@ const SalesOrderDetailPage: React.FC = () => {
           onDelete={() => setShowDeleteModal(true)}
           onConfirm={handleConfirmOrder}
           onCancel={handleCancelOrder}
+          onReopen={() => handleReopenOrder(false)}
           confirmLoading={confirmMutation.isPending}
           cancelLoading={cancelMutation.isPending}
+          reopenLoading={reopenMutation.isPending}
         />
 
-        <SalesOrderDetailItems items={items} />
+        <SalesOrderDetailItems items={items} orderStatus={order.status} />
 
         <Group justify="flex-end">
           <Button variant="light" onClick={() => navigate('/sales-orders')}>
@@ -125,6 +166,25 @@ const SalesOrderDetailPage: React.FC = () => {
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
+
+        <Modal
+          opened={showReopenModal}
+          onClose={() => setShowReopenModal(false)}
+          title="Reopen Sales Order"
+          centered
+        >
+          <Stack>
+            <Text>{reopenMessage}</Text>
+            <Group justify="flex-end">
+              <Button variant="light" onClick={() => setShowReopenModal(false)}>
+                Cancel
+              </Button>
+              <Button loading={reopenMutation.isPending} color="orange" onClick={() => handleReopenOrder(true)}>
+                Reopen And Delete Allocations
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
 
         <SalesOrderAllocationModal
           opened={showAllocationModal}

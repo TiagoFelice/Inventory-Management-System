@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActionIcon, Badge, Group, Popover, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Group, Tooltip } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { DataTable } from '@components/ui/DataTable';
+import { OrderProductsBadges } from '@components/ui/OrderProductsBadges';
 import { StatusBadge } from '@components/ui/StatusBadge';
 import { formatCurrency, formatDate } from '@shared/utils/formatting';
 import type { SalesOrder, SalesOrderItem } from '../../salesOrder.types';
@@ -24,42 +25,15 @@ export const SalesOrdersTable: React.FC<SalesOrdersTableProps> = ({
       return 'N/A';
     }
 
-    const visibleItems = items.slice(0, 2);
-    const hiddenItems = items.slice(2);
-
     return (
-      <Group gap={6} justify="center" wrap="wrap">
-        {visibleItems.map((item) => (
-          <Badge key={item.id} variant="light" color="grape">
-            {item.product_name || `Product #${item.product}`}
-          </Badge>
-        ))}
-        {hiddenItems.length > 0 ? (
-          <Popover width={260} position="bottom" withArrow shadow="md">
-            <Popover.Target>
-              <Badge
-                variant="outline"
-                color="gray"
-                style={{ cursor: 'pointer' }}
-              >
-                +{hiddenItems.length} more
-              </Badge>
-            </Popover.Target>
-            <Popover.Dropdown>
-              <Stack gap={8}>
-                {items.map((item) => (
-                  <Group key={item.id} justify="space-between" gap="sm" wrap="nowrap">
-                    <Text size="sm">{item.product_name || `Product #${item.product}`}</Text>
-                    <Text size="xs" c="dimmed">
-                      x{item.quantity}
-                    </Text>
-                  </Group>
-                ))}
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
-        ) : null}
-      </Group>
+      <OrderProductsBadges
+        items={items.map((item) => ({
+          id: item.id,
+          label: item.product_name || `Product #${item.product}`,
+          quantity: item.quantity,
+        }))}
+        badgeColor="grape"
+      />
     );
   };
 

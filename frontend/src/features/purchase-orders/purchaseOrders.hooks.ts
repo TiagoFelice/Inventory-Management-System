@@ -156,3 +156,29 @@ export const useReceivePurchaseOrderWithEntries = () => {
     },
   });
 };
+
+export const useReopenPurchaseOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, deleteStockEntries = false }: { id: number; deleteStockEntries?: boolean }) =>
+      purchaseOrdersApi.reopen(id, { delete_stock_entries: deleteStockEntries }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stocks.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
+      });
+    },
+  });
+};

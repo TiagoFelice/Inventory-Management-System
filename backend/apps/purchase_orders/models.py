@@ -97,7 +97,6 @@ class PurchaseOrderItem(models.Model):
         return f"{self.product.sku} - {self.quantity} {self.product.base_unit}"
     
     def save(self, *args, **kwargs):
-        """Automatically calculate total_cost if not set."""
-        if not self.total_cost:
-            self.total_cost = self.quantity * self.unit_cost
+        """Always keep total_cost consistent with quantity and unit_cost."""
+        self.total_cost = self.quantity * self.unit_cost
         super().save(*args, **kwargs)

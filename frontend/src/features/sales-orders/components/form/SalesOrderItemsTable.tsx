@@ -17,6 +17,7 @@ interface SalesOrderItemsTableProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   isLoading?: boolean;
+  isLocked?: boolean;
 }
 
 export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
@@ -26,6 +27,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
   onAddItem,
   onRemoveItem,
   isLoading = false,
+  isLocked = false,
 }) => {
   const productOptions = products
     .filter((product) => product?.id !== undefined && product?.id !== null)
@@ -79,7 +81,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
                           const product = products.find((productOption) => productOption.id.toString() === value);
                           onItemChange(index, 'product', product || null);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                         searchable
                       />
                     </Table.Td>
@@ -87,7 +89,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
                       <NumberInput
                         value={item.quantity}
                         onChange={(value) => onItemChange(index, 'quantity', typeof value === 'number' ? value : 0)}
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                         min={0}
                         step={1}
                         style={{ textAlign: 'center' }}
@@ -99,7 +101,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
                         onChange={(value) =>
                           onItemChange(index, 'unit_price', typeof value === 'number' ? value : 0)
                         }
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                         min={0}
                         step={0.01}
                         style={{ textAlign: 'center' }}
@@ -113,7 +115,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
                         color="red"
                         variant="subtle"
                         onClick={() => onRemoveItem(index)}
-                        disabled={isLoading}
+                        disabled={isLoading || isLocked}
                       >
                         <IconTrash size={16} />
                       </ActionIcon>
@@ -139,7 +141,7 @@ export const SalesOrderItemsTable: React.FC<SalesOrderItemsTableProps> = ({
       <Button
         leftSection={<IconPlus size={16} />}
         onClick={onAddItem}
-        disabled={isLoading}
+        disabled={isLoading || isLocked}
         variant="default"
       >
         Add Item

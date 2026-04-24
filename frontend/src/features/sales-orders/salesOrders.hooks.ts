@@ -167,3 +167,32 @@ export const useCancelSalesOrder = () => {
     },
   });
 };
+
+export const useReopenSalesOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, deleteAllocations = false }: { id: number; deleteAllocations?: boolean }) =>
+      salesOrdersApi.reopen(id, { delete_allocations: deleteAllocations }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stocks.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financial.all,
+      });
+    },
+  });
+};

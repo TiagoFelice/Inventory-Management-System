@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Stack, Button, Group } from '@mantine/core';
+import { Container, Stack, Button, Group, Modal, Text } from '@mantine/core';
+import type { AxiosError } from 'axios';
 import {
   usePurchaseOrder,
   useDeletePurchaseOrder,
   useConfirmPurchaseOrder,
   useCancelPurchaseOrder,
   useReceivePurchaseOrderWithEntries,
+  useReopenPurchaseOrder,
 } from '../purchaseOrders.hooks';
 import { LoadingState } from '@components/ui/LoadingState';
 import { ErrorState } from '@components/ui/ErrorState';
@@ -23,6 +25,8 @@ const PurchaseOrderDetailPage: React.FC = () => {
   const orderId = id ? parseInt(id, 10) : null;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenMessage, setReopenMessage] = useState('');
   const [errorAlert, setErrorAlert] = useState<{ isOpen: boolean; message: string }>({
     isOpen: false,
     message: '',
@@ -33,6 +37,17 @@ const PurchaseOrderDetailPage: React.FC = () => {
   const confirmMutation = useConfirmPurchaseOrder();
   const cancelMutation = useCancelPurchaseOrder();
   const receiveMutation = useReceivePurchaseOrderWithEntries();
+  const reopenMutation = useReopenPurchaseOrder();
+
+  const getErrorDetail = (error: unknown) => {
+    const axiosError = error as AxiosError<{
+      detail?: string;
+      error?: string;
+      requires_confirmation?: boolean;
+      stock_entry_count?: number;
+    }>;
+    return axiosError.response?.data;
+  };
 
   const handleDelete = async () => {
     if (orderId) {
@@ -89,6 +104,27 @@ const PurchaseOrderDetailPage: React.FC = () => {
     }
   };
 
+  const handleReopenOrder = async (deleteStockEntries = false) => {
+    try {
+      await reopenMutation.mutateAsync({ id: orderId!, deleteStockEntries });
+      setShowReopenModal(false);
+      setReopenMessage('');
+      await query.refetch();
+    } catch (error) {
+      const errorData = getErrorDetail(error);
+      if (errorData?.requires_confirmation) {
+        const count = errorData.stock_entry_count || 0;
+        setReopenMessage(
+          `This purchase order still has ${count} linked stock entr${count === 1 ? 'y' : 'ies'}. Reopening it will delete them. Do you want to continue?`
+        );
+        setShowReopenModal(true);
+        return;
+      }
+      const message = errorData?.detail || errorData?.error || 'Failed to reopen order';
+      setErrorAlert({ isOpen: true, message });
+    }
+  };
+
   if (query.isLoading) {
     return <LoadingState message="Loading purchase order..." />;
   }
@@ -115,13 +151,14 @@ const PurchaseOrderDetailPage: React.FC = () => {
           onConfirm={handleConfirmOrder}
           onCancel={handleCancelOrder}
           onReceive={handleReceiveOrder}
-          onBack={() => navigate('/purchase-orders')}
+          onReopen={() => handleReopenOrder(false)}
           confirmLoading={confirmMutation.isPending}
           cancelLoading={cancelMutation.isPending}
           receiveLoading={receiveMutation.isPending}
+          reopenLoading={reopenMutation.isPending}
         />
 
-        <PurchaseOrderDetailItems items={items} />
+        <PurchaseOrderDetailItems items={items} orderStatus={order.status} />
 
         <Group justify="flex-end">
           <Button
@@ -144,6 +181,25 @@ const PurchaseOrderDetailPage: React.FC = () => {
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
+
+        <Modal
+          opened={showReopenModal}
+          onClose={() => setShowReopenModal(false)}
+          title="Reopen Purchase Order"
+          centered
+        >
+          <Stack>
+            <Text>{reopenMessage}</Text>
+            <Group justify="flex-end">
+              <Button variant="light" onClick={() => setShowReopenModal(false)}>
+                Cancel
+              </Button>
+              <Button loading={reopenMutation.isPending} color="orange" onClick={() => handleReopenOrder(true)}>
+                Reopen And Delete Stock Entries
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
 
         <PurchaseOrderReceiveModal
           opened={showReceiveModal}

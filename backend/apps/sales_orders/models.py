@@ -113,9 +113,8 @@ class SalesOrderItem(models.Model):
         return f"{self.product.sku} - {self.quantity} @ ${self.unit_price}"
     
     def save(self, *args, **kwargs):
-        """Automatically calculate total_revenue if not set."""
-        if not self.total_revenue:
-            self.total_revenue = self.quantity * self.unit_price
+        """Always keep total_revenue consistent with quantity and unit_price."""
+        self.total_revenue = self.quantity * self.unit_price
         super().save(*args, **kwargs)
     
     @property

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from decimal import Decimal
+from django.db import transaction
 
 from apps.users.views import UserFilteredViewSet
 from apps.stocks.models import StockEntry
@@ -36,9 +37,12 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
     """API endpoint for managing purchase orders."""
     queryset = PurchaseOrder.objects.prefetch_related('items__product')
     serializer_class = PurchaseOrderSerializer
-    search_fields = ['order_number', 'supplier_name']
+    search_fields = ['order_number', 'supplier_name', 'items__product__name', 'items__product__sku']
     ordering_fields = ['ordered_at', 'status', 'order_number']
     ordering = ['-ordered_at']
+
+    def get_queryset(self):
+        return super().get_queryset().distinct()
     
     def get_serializer_class(self):
         """Use different serializers for different actions."""
@@ -225,3 +229,60 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'])
+    def reopen(self, request, pk=None):
+        """Reopen a received purchase order back to confirmed."""
+        po = self.get_object()
+
+        if po.status != 'received':
+            return Response(
+                {'detail': 'Only received purchase orders can be reopened.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        item_ids = list(po.items.values_list('id', flat=True))
+        linked_entries = StockEntry.objects.filter(
+            user=request.user,
+            source_type='purchase_order',
+            source_reference_id__in=item_ids,
+        )
+        delete_stock_entries = request.data.get('delete_stock_entries', False)
+
+        allocated_entries = linked_entries.filter(allocations__isnull=False).distinct()
+        if allocated_entries.exists():
+            return Response(
+                {
+                    'detail': 'Cannot reopen this purchase order because linked stock entries already have allocations.',
+                    'allocated_stock_entry_count': allocated_entries.count(),
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted_stock_entries = 0
+        if linked_entries.exists() and not delete_stock_entries:
+            return Response(
+                {
+                    'detail': 'This purchase order already created stock entries. Reopening requires deleting them.',
+                    'requires_confirmation': True,
+                    'stock_entry_count': linked_entries.count(),
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            if linked_entries.exists():
+                deleted_stock_entries = linked_entries.count()
+                linked_entries.delete()
+
+            po.status = 'confirmed'
+            po.save(update_fields=['status', 'updated_at'])
+
+        return Response(
+            {
+                'status': 'success',
+                'message': 'Purchase order reopened.',
+                'deleted_stock_entries': deleted_stock_entries,
+            },
+            status=status.HTTP_200_OK
+        )

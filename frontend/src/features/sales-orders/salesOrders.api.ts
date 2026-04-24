@@ -56,6 +56,9 @@ export const salesOrdersApi = {
   cancel: (id: number) =>
     apiClient.post(`/sales-orders/${id}/cancel/`),
 
+  reopen: (id: number, payload?: { delete_allocations?: boolean }) =>
+    apiClient.post(`/sales-orders/${id}/reopen/`, payload || {}),
+
   delete: (id: number) =>
     apiClient.delete(`/sales-orders/${id}/`),
 };

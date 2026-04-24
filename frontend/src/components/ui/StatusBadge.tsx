@@ -18,12 +18,27 @@ interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
   variant?: 'dot' | 'filled' | 'outline' | 'light';
 }
 
+export const normalizeStatus = (status: string): StatusType => {
+  const normalized = status.toLowerCase();
+
+  if (normalized === 'pending') {
+    return 'draft';
+  }
+
+  if (normalized in STATUS_VARIANTS) {
+    return normalized as StatusType;
+  }
+
+  return 'pending';
+};
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   variant = 'light',
   ...props
 }) => {
-  const config = STATUS_VARIANTS[status] || STATUS_VARIANTS.pending;
+  const normalizedStatus = normalizeStatus(status);
+  const config = STATUS_VARIANTS[normalizedStatus];
 
   return (
     <Badge color={config.color} variant={variant} {...props}>

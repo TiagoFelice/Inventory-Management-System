@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Container, Group, Paper, Select, Stack, Text } from '@mantine/core';
+import { Alert, Button, Container, Group, Paper, Stack, Text } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LoadingState } from '@components/ui/LoadingState';
@@ -7,19 +7,15 @@ import { ErrorState } from '@components/ui/ErrorState';
 import { useProducts } from '@/features/products/products.hooks';
 import { getErrorMessage } from '@shared/utils/errors';
 import {
-  useCancelSalesOrder,
-  useConfirmSalesOrderWithAllocations,
   useSalesOrder,
   useUpdateSalesOrder,
 } from '@features/sales-orders/salesOrders.hooks';
-import type { ConfirmSalesOrderAllocationPayload } from '@features/sales-orders/salesOrder.types';
 import { ActionErrorAlert } from '../components/list/ActionErrorAlert';
 import { SalesOrderForm, type SalesOrderFormData } from '../components/form/SalesOrderForm';
 import {
   SalesOrderItemsTable,
   type SalesOrderFormItem,
 } from '../components/form/SalesOrderItemsTable';
-import { SalesOrderAllocationModal } from '../components/form/SalesOrderAllocationModal';
 
 const SalesOrderEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +24,6 @@ const SalesOrderEditPage: React.FC = () => {
 
   const orderQuery = useSalesOrder(orderId);
   const updateMutation = useUpdateSalesOrder();
-  const confirmMutation = useConfirmSalesOrderWithAllocations();
-  const cancelMutation = useCancelSalesOrder();
   const productsQuery = useProducts();
   const products = productsQuery.data?.results || [];
 
@@ -47,7 +41,6 @@ const SalesOrderEditPage: React.FC = () => {
     isOpen: false,
     message: '',
   });
-  const [showAllocationModal, setShowAllocationModal] = useState(false);
 
   useEffect(() => {
     if (orderQuery.data) {
@@ -62,8 +55,8 @@ const SalesOrderEditPage: React.FC = () => {
         setItems(
           order.items.map((item) => ({
             product: products.find((product) => product.id === item.product) || null,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
+            quantity: Number(item.quantity),
+            unit_price: Number(item.unit_price),
           }))
         );
       } else {
@@ -94,54 +87,9 @@ const SalesOrderEditPage: React.FC = () => {
     setItems(items.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  const handleStatusChange = async (newStatus: string | null) => {
-    if (!orderId || !orderQuery.data || !newStatus || newStatus === orderQuery.data.status) {
-      return;
-    }
-
-    try {
-      if (newStatus === 'confirmed') {
-        setShowAllocationModal(true);
-        return;
-      } else if (newStatus === 'cancelled' && ['draft', 'confirmed'].includes(orderQuery.data.status)) {
-        await cancelMutation.mutateAsync(orderId);
-      } else if (newStatus !== 'draft') {
-        setErrorAlert({
-          isOpen: true,
-          message: `Cannot change from ${orderQuery.data.status} to ${newStatus}`,
-        });
-      }
-
-      await orderQuery.refetch();
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        'Failed to change status';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
-  const handleConfirmWithAllocations = async (payload: ConfirmSalesOrderAllocationPayload) => {
-    if (!orderId) {
-      return;
-    }
-
-    try {
-      await confirmMutation.mutateAsync({ id: orderId, payload });
-      setShowAllocationModal(false);
-      await orderQuery.refetch();
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        'Failed to confirm order';
-      setErrorAlert({ isOpen: true, message });
-    }
-  };
-
   const handleSubmit = async () => {
     if (!orderId) return;
+    const isItemsLocked = orderQuery.data?.status === 'confirmed';
 
     if (!formData.order_number.trim()) {
       alert('Order number is required');
@@ -149,24 +97,34 @@ const SalesOrderEditPage: React.FC = () => {
     }
 
     const validItems = items.filter((item) => item.product && item.quantity > 0);
-    if (validItems.length === 0) {
+    if (!isItemsLocked && validItems.length === 0) {
       alert('At least one item is required');
       return;
     }
 
     try {
+      const payload: {
+        order_number: string;
+        customer_name?: string;
+        sold_at: string;
+        items?: Array<{ product: number; quantity: number; unit_price: number }>;
+      } = {
+        order_number: formData.order_number,
+        customer_name: formData.customer_name || undefined,
+        sold_at: new Date(formData.sold_at).toISOString(),
+      };
+
+      if (!isItemsLocked) {
+        payload.items = validItems.map((item) => ({
+          product: item.product!.id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }));
+      }
+
       await updateMutation.mutateAsync({
         id: orderId,
-        payload: {
-          order_number: formData.order_number,
-          customer_name: formData.customer_name || undefined,
-          sold_at: new Date(formData.sold_at).toISOString(),
-          items: validItems.map((item) => ({
-            product: item.product!.id,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-          })),
-        },
+        payload,
       });
       navigate(`/sales-orders/${orderId}`);
     } catch (error) {
@@ -183,6 +141,7 @@ const SalesOrderEditPage: React.FC = () => {
   }
 
   const errorMessage = updateMutation.error ? getErrorMessage(updateMutation.error) : null;
+  const isItemsLocked = orderQuery.data.status === 'confirmed';
 
   return (
     <Container size="lg" py="xl">
@@ -203,29 +162,6 @@ const SalesOrderEditPage: React.FC = () => {
               isLoading={updateMutation.isPending}
             />
 
-            <div>
-              <Text size="sm" c="dimmed" fw={500} mb={8}>
-                Status
-              </Text>
-              <Select
-                label="Change Order Status"
-                placeholder="Select status"
-                data={[
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'confirmed', label: 'Confirmed' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ]}
-                value={orderQuery.data.status}
-                onChange={handleStatusChange}
-                disabled={
-                  updateMutation.isPending || confirmMutation.isPending || cancelMutation.isPending
-                }
-              />
-              <Text size="xs" c="dimmed" mt={4}>
-                Confirmed status requires manual stock allocations. Other status changes still use the usual endpoints.
-              </Text>
-            </div>
-
             <SalesOrderItemsTable
               items={items}
               products={products}
@@ -233,7 +169,14 @@ const SalesOrderEditPage: React.FC = () => {
               onAddItem={handleAddItem}
               onRemoveItem={handleRemoveItem}
               isLoading={updateMutation.isPending}
+              isLocked={isItemsLocked}
             />
+
+            {isItemsLocked ? (
+              <Text size="sm" c="dimmed">
+                Order items are locked because this sales order is already confirmed.
+              </Text>
+            ) : null}
 
             <Group justify="flex-end" pt="xl">
               <Button
@@ -255,16 +198,6 @@ const SalesOrderEditPage: React.FC = () => {
           message={errorAlert.message}
           onClose={() => setErrorAlert({ isOpen: false, message: '' })}
         />
-
-        {orderQuery.data ? (
-          <SalesOrderAllocationModal
-            opened={showAllocationModal}
-            order={orderQuery.data}
-            onClose={() => setShowAllocationModal(false)}
-            onConfirm={handleConfirmWithAllocations}
-            isLoading={confirmMutation.isPending}
-          />
-        ) : null}
       </Stack>
     </Container>
   );

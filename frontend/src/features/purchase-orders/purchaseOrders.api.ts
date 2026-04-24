@@ -50,4 +50,7 @@ export const purchaseOrdersApi = {
       `/purchase-orders/${id}/receive_with_entries/`,
       payload
     ),
+
+  reopen: (id: number, payload?: { delete_stock_entries?: boolean }) =>
+    apiClient.post(`/purchase-orders/${id}/reopen/`, payload || {}),
 };

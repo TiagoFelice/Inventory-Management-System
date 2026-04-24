@@ -1,7 +1,8 @@
 import React from 'react';
 import { ActionIcon, Badge, Group, Menu, Paper, Stack, Text, Tooltip } from '@mantine/core';
-import { IconCheck, IconChevronDown, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconPencil, IconRotateClockwise, IconTrash, IconX } from '@tabler/icons-react';
 import { formatCurrency, formatDate } from '@shared/utils/formatting';
+import { normalizeStatus } from '@components/ui/StatusBadge';
 import type { SalesOrder } from '../../salesOrder.types';
 
 interface SalesOrderDetailHeaderProps {
@@ -10,8 +11,10 @@ interface SalesOrderDetailHeaderProps {
   onDelete: () => void;
   onConfirm: (event?: React.MouseEvent) => void;
   onCancel: (event?: React.MouseEvent) => void;
+  onReopen: (event?: React.MouseEvent) => void;
   confirmLoading?: boolean;
   cancelLoading?: boolean;
+  reopenLoading?: boolean;
 }
 
 const getStatusColor = (status: string) => {
@@ -33,9 +36,13 @@ export const SalesOrderDetailHeader: React.FC<SalesOrderDetailHeaderProps> = ({
   onDelete,
   onConfirm,
   onCancel,
+  onReopen,
   confirmLoading = false,
   cancelLoading = false,
+  reopenLoading = false,
 }) => {
+  const normalizedStatus = normalizeStatus(order.status);
+
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="flex-start">
@@ -74,15 +81,15 @@ export const SalesOrderDetailHeader: React.FC<SalesOrderDetailHeaderProps> = ({
                     event.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
-                  <Badge color={getStatusColor(order.status)} size="lg">
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <Badge color={getStatusColor(normalizedStatus)} size="lg">
+                    {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
                   </Badge>
                   <IconChevronDown size={18} style={{ opacity: 0.6 }} />
                 </Group>
               </Tooltip>
             </Menu.Target>
             <Menu.Dropdown>
-              {order.status === 'draft' && (
+              {normalizedStatus === 'draft' && (
                 <>
                   <Menu.Item leftSection={<IconCheck size={14} />} onClick={onConfirm} disabled={confirmLoading}>
                     Confirm Order
@@ -92,10 +99,19 @@ export const SalesOrderDetailHeader: React.FC<SalesOrderDetailHeaderProps> = ({
                   </Menu.Item>
                 </>
               )}
-              {order.status === 'confirmed' && (
-                <Menu.Item leftSection={<IconX size={14} />} color="red" onClick={onCancel} disabled={cancelLoading}>
-                  Cancel Order
-                </Menu.Item>
+              {normalizedStatus === 'confirmed' && (
+                <>
+                  <Menu.Item
+                    leftSection={<IconRotateClockwise size={14} />}
+                    onClick={onReopen}
+                    disabled={reopenLoading}
+                  >
+                    Reopen Order
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconX size={14} />} color="red" onClick={onCancel} disabled={cancelLoading}>
+                    Cancel Order
+                  </Menu.Item>
+                </>
               )}
             </Menu.Dropdown>
           </Menu>
