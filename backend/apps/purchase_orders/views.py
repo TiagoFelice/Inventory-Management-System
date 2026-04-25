@@ -171,53 +171,53 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        created_entries = []
-
         try:
-            expected_item_ids = {item.id for item in po_items}
-            provided_item_ids = {
-                entry['purchase_order_item_id']
-                for entry in entries_data
-                if entry.get('quantity_received')
-            }
+            with transaction.atomic():
+                created_entries = []
+                expected_item_ids = {item.id for item in po_items}
+                provided_item_ids = {
+                    entry['purchase_order_item_id']
+                    for entry in entries_data
+                    if entry.get('quantity_received')
+                }
 
-            if expected_item_ids != provided_item_ids:
-                raise ValueError('Each purchase order item must be fully received before completing this action')
+                if expected_item_ids != provided_item_ids:
+                    raise ValueError('Each purchase order item must be fully received before completing this action')
 
-            received_at = timezone.now()
+                received_at = timezone.now()
 
-            for entry_data in entries_data:
-                po_item = PurchaseOrderItem.objects.get(
-                    id=entry_data['purchase_order_item_id'],
-                    purchase_order=po
-                )
-
-                quantity_received = Decimal(str(entry_data['quantity_received']))
-                stock_entry = StockEntry.objects.create(
-                    user=request.user,
-                    product=po_item.product,
-                    source_type='purchase_order',
-                    source_reference_id=po_item.id,
-                    quantity_received=quantity_received,
-                    received_at=received_at,
-                    expiration_date=entry_data.get('expiration_date') or None,
-                    notes=f"Auto-created from purchase order {po.order_number}",
-                )
-                created_entries.append(stock_entry)
-
-            for po_item in po_items:
-                received_total = sum(
-                    entry.quantity_received
-                    for entry in created_entries
-                    if entry.source_reference_id == po_item.id
-                )
-                if received_total != po_item.quantity:
-                    raise ValueError(
-                        f'Entries for product {po_item.product.sku} must total {po_item.quantity}'
+                for entry_data in entries_data:
+                    po_item = PurchaseOrderItem.objects.get(
+                        id=entry_data['purchase_order_item_id'],
+                        purchase_order=po
                     )
-            
-            po.status = 'received'
-            po.save()
+
+                    quantity_received = Decimal(str(entry_data['quantity_received']))
+                    stock_entry = StockEntry.objects.create(
+                        user=request.user,
+                        product=po_item.product,
+                        source_type='purchase_order',
+                        source_reference_id=po_item.id,
+                        quantity_received=quantity_received,
+                        received_at=received_at,
+                        expiration_date=entry_data.get('expiration_date') or None,
+                        notes=f"Auto-created from purchase order {po.order_number}",
+                    )
+                    created_entries.append(stock_entry)
+
+                for po_item in po_items:
+                    received_total = sum(
+                        entry.quantity_received
+                        for entry in created_entries
+                        if entry.source_reference_id == po_item.id
+                    )
+                    if received_total != po_item.quantity:
+                        raise ValueError(
+                            f'Entries for product {po_item.product.sku} must total {po_item.quantity}'
+                        )
+
+                po.status = 'received'
+                po.save()
             
             return Response({
                 'status': 'success',

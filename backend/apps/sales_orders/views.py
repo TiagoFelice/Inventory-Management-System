@@ -120,59 +120,59 @@ class SalesOrderViewSet(UserFilteredViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        created_allocations = []
-
         try:
-            expected_item_ids = {item.id for item in sales_order_items}
-            provided_item_ids = {
-                allocation['sales_order_item_id']
-                for allocation in allocations_data
-                if allocation.get('quantity_allocated')
-            }
+            with transaction.atomic():
+                created_allocations = []
+                expected_item_ids = {item.id for item in sales_order_items}
+                provided_item_ids = {
+                    allocation['sales_order_item_id']
+                    for allocation in allocations_data
+                    if allocation.get('quantity_allocated')
+                }
 
-            if expected_item_ids != provided_item_ids:
-                raise ValueError('Each sales order item must be fully allocated before confirmation')
+                if expected_item_ids != provided_item_ids:
+                    raise ValueError('Each sales order item must be fully allocated before confirmation')
 
-            for allocation_data in allocations_data:
-                sales_item = SalesOrderItem.objects.get(
-                    id=allocation_data['sales_order_item_id'],
-                    sales_order=so
-                )
-                stock_entry = StockEntry.objects.get(
-                    id=allocation_data['stock_entry_id'],
-                    user=request.user
-                )
-                
-                quantity = Decimal(str(allocation_data['quantity_allocated']))
-                
-                if stock_entry.quantity_available < quantity:
-                    raise ValueError(
-                        f'Insufficient stock for stock entry #{stock_entry.id}. '
-                        f'Available: {stock_entry.quantity_available}, Required: {quantity}'
+                for allocation_data in allocations_data:
+                    sales_item = SalesOrderItem.objects.get(
+                        id=allocation_data['sales_order_item_id'],
+                        sales_order=so
                     )
-                
-                allocation = StockAllocation.objects.create(
-                    user=request.user,
-                    sales_order_item=sales_item,
-                    stock_entry=stock_entry,
-                    quantity_allocated=quantity,
-                    type='sale',
-                )
-                created_allocations.append(allocation)
-
-            for sales_item in sales_order_items:
-                allocated_total = sum(
-                    allocation.quantity_allocated
-                    for allocation in created_allocations
-                    if allocation.sales_order_item_id == sales_item.id
-                )
-                if allocated_total != sales_item.quantity:
-                    raise ValueError(
-                        f'Allocations for product {sales_item.product.sku} must total {sales_item.quantity}'
+                    stock_entry = StockEntry.objects.get(
+                        id=allocation_data['stock_entry_id'],
+                        user=request.user
                     )
-            
-            so.status = 'confirmed'
-            so.save()
+                    
+                    quantity = Decimal(str(allocation_data['quantity_allocated']))
+                    
+                    if stock_entry.quantity_available < quantity:
+                        raise ValueError(
+                            f'Insufficient stock for stock entry #{stock_entry.id}. '
+                            f'Available: {stock_entry.quantity_available}, Required: {quantity}'
+                        )
+                    
+                    allocation = StockAllocation.objects.create(
+                        user=request.user,
+                        sales_order_item=sales_item,
+                        stock_entry=stock_entry,
+                        quantity_allocated=quantity,
+                        type='sale',
+                    )
+                    created_allocations.append(allocation)
+
+                for sales_item in sales_order_items:
+                    allocated_total = sum(
+                        allocation.quantity_allocated
+                        for allocation in created_allocations
+                        if allocation.sales_order_item_id == sales_item.id
+                    )
+                    if allocated_total != sales_item.quantity:
+                        raise ValueError(
+                            f'Allocations for product {sales_item.product.sku} must total {sales_item.quantity}'
+                        )
+                
+                so.status = 'confirmed'
+                so.save()
             
             return Response({
                 'status': 'success',
