@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Tooltip,
   Badge,
+  Button,
   Menu,
   Paper,
 } from '@mantine/core';
@@ -99,30 +100,22 @@ export const PurchaseOrderDetailHeader: React.FC<PurchaseOrderDetailHeaderProps>
           </Tooltip>
           <Menu position="bottom-end" shadow="md">
             <Menu.Target>
-              <Tooltip label="Click to change status" position="top">
-                <Group
-                  gap={4}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+              <Tooltip label="Change order status" position="top">
+                <Button
+                  variant="light"
+                  color={getStatusColor(normalizedStatus)}
+                  rightSection={<IconChevronDown size={16} />}
+                  size="md"
                 >
-                  <Badge
-                    color={getStatusColor(normalizedStatus)}
-                    size="lg"
-                  >
-                    {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
-                  </Badge>
-                  <IconChevronDown size={18} style={{ opacity: 0.6 }} />
-                </Group>
+                  <Group gap="xs">
+                    <Text fw={600} size="sm">
+                      Change status
+                    </Text>
+                    <Badge color={getStatusColor(normalizedStatus)} variant="white">
+                      {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
+                    </Badge>
+                  </Group>
+                </Button>
               </Tooltip>
             </Menu.Target>
             <Menu.Dropdown>

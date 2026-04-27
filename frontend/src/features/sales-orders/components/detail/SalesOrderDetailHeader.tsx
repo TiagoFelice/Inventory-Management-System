@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActionIcon, Badge, Group, Menu, Paper, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Menu, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { IconCheck, IconChevronDown, IconPencil, IconRotateClockwise, IconTrash, IconX } from '@tabler/icons-react';
 import { formatCurrency, formatDate } from '@shared/utils/formatting';
 import { normalizeStatus } from '@components/ui/StatusBadge';
@@ -65,27 +65,22 @@ export const SalesOrderDetailHeader: React.FC<SalesOrderDetailHeaderProps> = ({
           </Tooltip>
           <Menu position="bottom-end" shadow="md">
             <Menu.Target>
-              <Tooltip label="Click to change status" position="top">
-                <Group
-                  gap={4}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+              <Tooltip label="Change order status" position="top">
+                <Button
+                  variant="light"
+                  color={getStatusColor(normalizedStatus)}
+                  rightSection={<IconChevronDown size={16} />}
+                  size="md"
                 >
-                  <Badge color={getStatusColor(normalizedStatus)} size="lg">
-                    {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
-                  </Badge>
-                  <IconChevronDown size={18} style={{ opacity: 0.6 }} />
-                </Group>
+                  <Group gap="xs">
+                    <Text fw={600} size="sm">
+                      Change status
+                    </Text>
+                    <Badge color={getStatusColor(normalizedStatus)} variant="white">
+                      {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
+                    </Badge>
+                  </Group>
+                </Button>
               </Tooltip>
             </Menu.Target>
             <Menu.Dropdown>
