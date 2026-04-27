@@ -1,10 +1,17 @@
 from django.contrib.auth.models import User
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import CurrentUserSerializer, UserSerializer
+
+
+class IsSuperuser(BasePermission):
+    """Allow access only to authenticated superusers."""
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
 
 
 class UserFilteredViewSet(viewsets.ModelViewSet):
@@ -31,7 +38,7 @@ class UserManagementViewSet(
 ):
     queryset = User.objects.all().order_by('username', 'id')
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsSuperuser]
 
 
 @api_view(['GET'])
