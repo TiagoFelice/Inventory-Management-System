@@ -2,12 +2,16 @@
 
 Inventory management application for Food & Beverages CPG brands.
 
+Deployed app: [inventory-management-system-367.vercel.app](https://inventory-management-system-367.vercel.app)
+
 The system lets each authenticated user manage:
 - products
 - stock entries
 - purchase orders
 - sales orders
 - financial analysis
+
+Superusers can also manage application users through a dedicated manager area.
 
 It is built with a Django REST API and a React + TypeScript frontend. Data is isolated per user, stock movements are traceable, and profit reporting is calculated on the backend.
 
@@ -23,6 +27,7 @@ It is built with a Django REST API and a React + TypeScript frontend. Data is is
 - Create sales orders with quantities and selling prices
 - Allocate sales against specific stock entries
 - View revenue, purchase cost, COGS, profit, and profit margin in the financial dashboard
+- Allow superusers to list, create, and edit application users
 
 ### Business rules
 - Users only access their own records
@@ -96,6 +101,7 @@ This structure keeps stock history auditable and also supports financial traceab
 - Purchase Orders
 - Sales Orders
 - Financial Dashboard
+- Manager Users
 
 ## Authentication
 
@@ -104,6 +110,8 @@ The application uses token-based authentication with JWT.
 This choice keeps the backend stateless, works well with a separate React frontend, and is simple to use for protected API requests. After login, the frontend authenticates subsequent requests with the issued token, while the backend validates the user identity on every call.
 
 Authorization is enforced through user-level data ownership: all main business records belong to a specific user, and the API only exposes records owned by the authenticated user. This guarantees data isolation across products, stock entries, purchase orders, sales orders, and stock allocations.
+
+The application also includes role-based access for administration tasks: the manager area is restricted to superusers, who can manage application users separately from regular inventory data.
 
 ## Main Screens
 
@@ -114,6 +122,7 @@ Authorization is enforced through user-level data ownership: all main business r
 - Purchase order list, create, edit, detail, receive flow
 - Sales order list, create, edit, detail, allocation flow
 - Financial dashboard with product and purchase-item perspectives
+- Manager user list, create, and edit pages for superusers
 
 ## API Overview
 
@@ -133,6 +142,13 @@ Authentication is required for all business endpoints. Each response is scoped t
   Returns JWT access and refresh tokens for login.
 - `POST /api/token/refresh/`
   Refreshes the access token using a valid refresh token.
+- `GET /api/auth/me/`
+  Returns the authenticated user profile used by the frontend session and role-aware navigation.
+
+### User Management
+- `/api/users/`
+  Superuser-only user management endpoints.
+  Used by the manager area to list, create, retrieve, and update application users.
 
 ### Products
 - `/api/products/`
@@ -346,6 +362,54 @@ Notes:
 - Python 3.11+
 - Node.js 18+
 - PostgreSQL 16+ or Docker
+
+### Option A. Run everything with Docker
+
+This is the easiest local setup.
+
+What it does:
+- runs PostgreSQL in one container
+- runs Django plus the built React frontend in one app container
+- exposes the whole application on a single URL: `http://localhost:8000`
+
+Start the application:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+```text
+http://localhost:8000
+```
+
+Demo login:
+
+```text
+username: DEMO
+password: demo1234
+```
+
+Stop the application:
+
+```bash
+docker compose down
+```
+
+Reset the database:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Notes:
+- The Docker setup is for local usage only.
+- It does not replace the current Vercel frontend deployment or Railway backend deployment.
+- The app container runs Django migrations automatically on startup.
+
+### Option B. Run backend and frontend separately
 
 ### 1. Start PostgreSQL
 

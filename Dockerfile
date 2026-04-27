@@ -1,24 +1,37 @@
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r ./backend/requirements.txt
 
-# Copy project files
-COPY backend/ .
+COPY backend/ ./backend/
+COPY --from=frontend-builder /app/backend/frontend_dist/ ./backend/frontend_dist/
+COPY docker/entrypoint.sh /entrypoint.sh
 
-# Create migrations and collect static files
-RUN mkdir -p staticfiles
+RUN mkdir -p /app/backend/staticfiles \
+    && chmod +x /entrypoint.sh
 
-# Expose port
+WORKDIR /app/backend
+
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "ims_backend.wsgi:application"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosHeaders, AxiosInstance } from 'axios';
 import { authStorage } from '../storage/auth-storage';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface ErrorResponse {
   detail?: string;

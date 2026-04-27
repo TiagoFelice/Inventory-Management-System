@@ -1,3 +1,4 @@
 .DS_*
 .github/*
 .vscode/*
+backend/frontend_dist/

@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import path from 'path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/static/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -15,6 +16,10 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, './src/lib'),
     },
   },
+  build: {
+    outDir: '../backend/frontend_dist',
+    emptyOutDir: true,
+  },
   server: {
     port: 5173,
     proxy: {
@@ -25,4 +30,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
