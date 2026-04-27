@@ -57,7 +57,7 @@ const LoginForm: React.FC = () => {
           <Stack gap="md">
             <TextInput
               label="Username"
-              placeholder="testuser"
+              placeholder="Username123"
               {...form.getInputProps('username')}
               disabled={loginMutation.isPending}
             />

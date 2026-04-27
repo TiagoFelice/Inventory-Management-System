@@ -4,6 +4,23 @@ Inventory management application for Food & Beverages CPG brands.
 
 Deployed app: [inventory-management-system-367.vercel.app](https://inventory-management-system-367.vercel.app)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Local Setup](#local-setup)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Scope Delivered](#scope-delivered)
+- [Architecture](#architecture)
+- [Authentication](#authentication)
+- [Main Screens](#main-screens)
+- [API Overview](#api-overview)
+- [Data Model](#data-model)
+- [Technical Decisions](#technical-decisions)
+
+## Overview
+
 The system lets each authenticated user manage:
 - products
 - stock entries
@@ -14,6 +31,117 @@ The system lets each authenticated user manage:
 Superusers can also manage application users through a dedicated manager area.
 
 It is built with a Django REST API and a React + TypeScript frontend. Data is isolated per user, stock movements are traceable, and profit reporting is calculated on the backend.
+
+## Tech Stack
+
+### Backend
+- Django 4
+- Django REST Framework
+- Simple JWT authentication
+- PostgreSQL
+- pytest + pytest-django
+
+### Frontend
+- React 18
+- TypeScript
+- TanStack Query
+- Mantine
+- React Router
+- Vite
+
+## Local Setup
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL 16+ or Docker
+
+### Running locally with Docker
+
+This is the easiest local setup.
+
+What it does:
+- runs PostgreSQL in one container
+- runs Django plus the built React frontend in one app container
+- exposes the whole application on a single URL: `http://localhost:8000`
+
+Start the application:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+```text
+http://localhost:8000
+```
+
+Demo login:
+
+```text
+username: DEMO
+password: demo1234
+```
+
+Create a superuser locally:
+
+```bash
+docker compose exec app python manage.py createsuperuser
+```
+
+Stop the application:
+
+```bash
+docker compose down
+```
+
+Reset the database:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Notes:
+- The Docker setup is for local usage only.
+- It does not replace the current Vercel frontend deployment or Railway backend deployment.
+- The app container runs Django migrations automatically on startup.
+- If you reset the database, create the superuser again because the previous one will be removed.
+
+
+## Testing
+
+### Backend tests
+
+```bash
+cd backend
+./venv/bin/python -m pytest
+```
+
+
+### Frontend build check
+
+```bash
+cd frontend
+npm run build
+```
+
+## Deployment
+
+This project supports three different run/deployment paths:
+
+- Local Docker:
+  `docker-compose.yml` starts Postgres in one container and the app in another container.
+  The app container builds the React frontend and serves it through Django on `http://localhost:8000`.
+- Railway backend:
+  `backend/railway.json` supports the backend deployment flow used on Railway.
+- Vercel frontend:
+  `frontend/vercel.json` supports the frontend deployment flow used on Vercel.
+
+Important:
+- The Docker setup is only for local execution.
+- Cloud deployment splits between Vercel for the frontend and Railway for the backend.
 
 ## Scope Delivered
 
@@ -49,8 +177,7 @@ Inventory is modeled as explicit in and out movements instead of a single mutabl
 - Each `StockAllocation` is linked to a specific `StockEntry`
 - This means stock is consumed from a concrete inbound lot/batch, not only from the product in general
 - That relationship keeps inventory traceability intact from stock received to stock consumed
-- Available quantity for a stock entry is:
-- `quantity_received - sum(quantity_allocated)`
+- Available quantity for a stock entry is `quantity_received - sum(quantity_allocated)`
 - Product availability is the sum of available quantities across all stock entries for that product
 
 Typical traceable flow:
@@ -65,23 +192,6 @@ Flexible operational flow:
 - Manual allocations can represent losses such as expiration, damage, or other inventory adjustments
 
 This structure keeps stock history auditable and also supports financial traceability when the movement is linked to purchase and sales records.
-
-## Tech Stack
-
-### Backend
-- Django 4
-- Django REST Framework
-- Simple JWT authentication
-- PostgreSQL
-- pytest + pytest-django
-
-### Frontend
-- React 18
-- TypeScript
-- TanStack Query
-- Mantine
-- React Router
-- Vite
 
 ## Architecture
 
@@ -355,137 +465,6 @@ Notes:
 - Each allocation points to a specific stock entry to preserve batch/lot traceability
 - `StockEntry.source_reference_id` is used when the entry comes from a purchase order item
 - A sales allocation is typically linked to a `SalesOrderItem`, but allocations can also be used for non-sale losses such as expiration or damage
-
-## Local Setup
-
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 16+ or Docker
-
-### Option A. Run everything with Docker
-
-This is the easiest local setup.
-
-What it does:
-- runs PostgreSQL in one container
-- runs Django plus the built React frontend in one app container
-- exposes the whole application on a single URL: `http://localhost:8000`
-
-Start the application:
-
-```bash
-docker compose up --build
-```
-
-Open:
-
-```text
-http://localhost:8000
-```
-
-Demo login:
-
-```text
-username: DEMO
-password: demo1234
-```
-
-Stop the application:
-
-```bash
-docker compose down
-```
-
-Reset the database:
-
-```bash
-docker compose down -v
-docker compose up --build
-```
-
-Notes:
-- The Docker setup is for local usage only.
-- It does not replace the current Vercel frontend deployment or Railway backend deployment.
-- The app container runs Django migrations automatically on startup.
-
-### Option B. Run backend and frontend separately
-
-### 1. Start PostgreSQL
-
-Use Docker if preferred:
-
-```bash
-docker compose up -d db
-```
-
-### 2. Run the backend
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
-
-Backend runs at `http://localhost:8000`.
-
-Environment variables used by the backend:
-
-```bash
-DB_NAME=inventory
-DB_USER=inventory_user
-DB_PASSWORD=inventory_pass
-DB_HOST=localhost
-DB_PORT=5432
-DEBUG=True
-CORS_ALLOWED_ORIGINS=http://localhost:5173
-SECRET_KEY=your-secret-key
-```
-
-### 3. Run the frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs at `http://localhost:5173`.
-
-Environment variable:
-
-```bash
-VITE_API_URL=http://localhost:8000/api
-```
-
-## Testing
-
-### Backend tests
-
-```bash
-cd backend
-./venv/bin/python -m pytest
-```
-
-
-### Frontend build check
-
-```bash
-cd frontend
-npm run build
-```
-
-## Deployment
-
-The repository includes deployment-oriented files:
-- `Dockerfile` at the repo root for the backend container
-- `docker-compose.yml` for local PostgreSQL
-- `backend/railway.json` for Railway-style backend deployment
-- `frontend/vercel.json` for Vercel frontend deployment
 
 ## Technical Decisions
 
