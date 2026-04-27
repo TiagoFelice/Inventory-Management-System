@@ -21,6 +21,12 @@ class PurchaseOrderWriteItemSerializer(serializers.ModelSerializer):
         model = PurchaseOrderItem
         fields = ['product', 'quantity', 'unit_cost']
 
+    def validate_product(self, value):
+        request = self.context.get('request')
+        if request and value.user_id != request.user.id:
+            raise serializers.ValidationError('You can only use products that belong to your account.')
+        return value
+
 
 class PurchaseOrderSerializer(serializers.ModelSerializer):
     items = PurchaseOrderItemSerializer(many=True, read_only=True)

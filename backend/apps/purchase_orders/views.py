@@ -193,6 +193,10 @@ class PurchaseOrderViewSet(UserFilteredViewSet):
                     )
 
                     quantity_received = Decimal(str(entry_data['quantity_received']))
+                    if quantity_received <= Decimal('0'):
+                        raise ValueError(
+                            f'Quantity received for product {po_item.product.sku} must be greater than zero'
+                        )
                     stock_entry = StockEntry.objects.create(
                         user=request.user,
                         product=po_item.product,

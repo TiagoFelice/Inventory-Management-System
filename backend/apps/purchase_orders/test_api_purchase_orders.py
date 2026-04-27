@@ -2,7 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from apps.purchase_orders.models import PurchaseOrder
+from apps.products.models import Product
+from apps.purchase_orders.models import PurchaseOrder, PurchaseOrderItem
 from apps.stocks.models import StockEntry
 
 
@@ -139,3 +140,58 @@ def test_purchase_order_reopen_deletes_unallocated_stock_entries(
     assert response.status_code == 200
     assert purchase_order.status == 'confirmed'
     assert StockEntry.objects.filter(source_reference_id=purchase_order_item.id).count() == 0
+
+
+def test_receive_purchase_order_rejects_non_positive_entry_quantity(
+    authenticated_client,
+    purchase_order,
+    purchase_order_item,
+):
+    response = authenticated_client.post(
+        f'/api/purchase-orders/{purchase_order.id}/receive_with_entries/',
+        {
+            'entries': [
+                {
+                    'purchase_order_item_id': purchase_order_item.id,
+                    'quantity_received': '0.0000',
+                }
+            ]
+        },
+        format='json',
+    )
+
+    purchase_order.refresh_from_db()
+    assert response.status_code == 400
+    assert 'must be greater than zero' in response.data['error']
+    assert purchase_order.status == 'confirmed'
+    assert not StockEntry.objects.filter(source_reference_id=purchase_order_item.id).exists()
+
+
+def test_purchase_order_create_rejects_product_from_other_user(authenticated_client, other_user):
+    other_product = Product.objects.create(
+        user=other_user,
+        name='Foreign Product',
+        sku='FOR-PO-1',
+        base_unit='unit',
+        amount=Decimal('0.00'),
+    )
+
+    response = authenticated_client.post(
+        '/api/purchase-orders/',
+        {
+            'order_number': 'PO-FOREIGN',
+            'supplier_name': 'Supplier',
+            'ordered_at': '2026-04-24T10:00:00Z',
+            'items': [
+                {
+                    'product': other_product.id,
+                    'quantity': '1.0000',
+                    'unit_cost': '3.50',
+                }
+            ],
+        },
+        format='json',
+    )
+
+    assert response.status_code == 400
+    assert 'items' in response.data

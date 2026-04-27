@@ -87,8 +87,16 @@ class SalesOrderViewSet(UserFilteredViewSet):
                 status=status.HTTP_200_OK
             )
         
-        so.status = 'cancelled'
-        so.save()
+        with transaction.atomic():
+            if so.status == 'confirmed':
+                StockAllocation.objects.filter(
+                    user=request.user,
+                    sales_order_item__sales_order=so,
+                    type='sale',
+                ).delete()
+
+            so.status = 'cancelled'
+            so.save()
         
         return Response(
             {'status': 'success', 'message': 'Sales order cancelled'},
@@ -144,6 +152,11 @@ class SalesOrderViewSet(UserFilteredViewSet):
                     )
                     
                     quantity = Decimal(str(allocation_data['quantity_allocated']))
+
+                    if stock_entry.product_id != sales_item.product_id:
+                        raise ValueError(
+                            f'Stock entry #{stock_entry.id} does not belong to product {sales_item.product.sku}.'
+                        )
                     
                     if stock_entry.quantity_available < quantity:
                         raise ValueError(

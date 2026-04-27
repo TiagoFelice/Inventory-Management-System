@@ -52,11 +52,11 @@ class SalesOrder(models.Model):
     @property
     def total_cost(self):
         """
-        Calculate total cost of goods sold for this sales order.
-        Note: Requires cost tracking to be implemented at the StockAllocation level.
-        Currently returns 0.00.
+        Sales-order cost is not currently exposed from the model layer.
+
+        Financial reporting uses stock allocations directly in the finance app,
+        so this property remains a neutral default for now.
         """
-        # TODO: Implement cost tracking if needed
         return Decimal('0.00')
     
     @property
@@ -120,11 +120,11 @@ class SalesOrderItem(models.Model):
     @property
     def total_cost(self):
         """
-        Calculate cost of goods sold for this line item.
-        Note: Requires cost tracking to be implemented at the StockAllocation level.
-        Currently returns 0.00.
+        Line-item cost is not currently exposed from the model layer.
+
+        Financial reporting uses stock allocations directly in the finance app,
+        so this property remains a neutral default for now.
         """
-        # TODO: Implement cost tracking if needed
         return Decimal('0.00')
     
     @property

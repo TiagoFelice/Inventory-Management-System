@@ -18,6 +18,8 @@ class StockAllocationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = self.instance
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
 
         if instance and 'stock_entry' in attrs and attrs['stock_entry'] != instance.stock_entry:
             raise serializers.ValidationError({
@@ -40,6 +42,16 @@ class StockAllocationSerializer(serializers.ModelSerializer):
         if stock_entry is None or quantity_allocated is None:
             return attrs
 
+        if user and stock_entry.user_id != user.id:
+            raise serializers.ValidationError({
+                'stock_entry': 'You can only allocate stock entries that belong to your account.'
+            })
+
+        if sales_order_item and user and sales_order_item.sales_order.user_id != user.id:
+            raise serializers.ValidationError({
+                'sales_order_item': 'You can only allocate to sales order items that belong to your account.'
+            })
+
         current_quantity = instance.quantity_allocated if instance else 0
         available_for_update = stock_entry.quantity_available + current_quantity
         if quantity_allocated > available_for_update:
@@ -60,6 +72,10 @@ class StockAllocationSerializer(serializers.ModelSerializer):
             })
 
         if sales_order_item:
+            if stock_entry.product_id != sales_order_item.product_id:
+                raise serializers.ValidationError({
+                    'stock_entry': 'Stock entry product must match the sales order item product.'
+                })
             sibling_allocations = sales_order_item.allocations.exclude(
                 pk=instance.pk if instance else None
             )
@@ -115,6 +131,12 @@ class SalesOrderWriteItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesOrderItem
         fields = ['product', 'quantity', 'unit_price']
+
+    def validate_product(self, value):
+        request = self.context.get('request')
+        if request and value.user_id != request.user.id:
+            raise serializers.ValidationError('You can only use products that belong to your account.')
+        return value
 
 
 class SalesOrderSerializer(serializers.ModelSerializer):
@@ -209,5 +231,5 @@ class SalesOrderCreateUpdateSerializer(serializers.ModelSerializer):
                     sales_order=instance,
                     **item_data
                 )
-        
+
         return instance

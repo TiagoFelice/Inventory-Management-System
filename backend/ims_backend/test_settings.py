@@ -1,6 +1,15 @@
 from .settings import *  # noqa: F403,F401
 
 
+MIDDLEWARE = [  # noqa: F405
+    middleware
+    for middleware in MIDDLEWARE  # noqa: F405
+    if middleware != 'whitenoise.middleware.WhiteNoiseMiddleware'
+]
+
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

@@ -1,3 +1,6 @@
-from django.db import models
+"""
+Finance app models.
 
-# Create your models here.
+This app currently exposes computed reporting endpoints only and does not
+define persistent database models.
+"""
