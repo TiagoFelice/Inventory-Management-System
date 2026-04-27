@@ -6,7 +6,7 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
-RUN npm run build
+RUN VITE_BUILD_TARGET=docker npm run build
 
 FROM python:3.11-slim
 

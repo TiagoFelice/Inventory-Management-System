@@ -3,8 +3,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/static/' : '/',
+export default defineConfig(({ command }) => {
+  const isDockerBuild = process.env.VITE_BUILD_TARGET === 'docker';
+
+  return {
+  base: command === 'build' && isDockerBuild ? '/static/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -17,7 +20,7 @@ export default defineConfig(({ command }) => ({
     },
   },
   build: {
-    outDir: '../backend/frontend_dist',
+    outDir: isDockerBuild ? '../backend/frontend_dist' : 'dist',
     emptyOutDir: true,
   },
   server: {
@@ -30,4 +33,5 @@ export default defineConfig(({ command }) => ({
       },
     },
   },
-}));
+  };
+});
