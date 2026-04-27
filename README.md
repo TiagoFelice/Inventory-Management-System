@@ -471,8 +471,6 @@ cd backend
 ./venv/bin/python -m pytest
 ```
 
-Current result:
-- `34 passed`
 
 ### Frontend build check
 
@@ -480,9 +478,6 @@ Current result:
 cd frontend
 npm run build
 ```
-
-Current result:
-- production build passes
 
 ## Deployment
 
