@@ -6,8 +6,6 @@ import {
   Button,
   Stack,
   Alert,
-  Text,
-  Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
@@ -80,16 +78,6 @@ const LoginForm: React.FC = () => {
             </Button>
           </Stack>
         </form>
-
-        <Group justify="center" py="md">
-          <Text size="sm" c="dimmed">
-            Demo credentials:
-          </Text>
-          <br />
-          <Text size="xs" c="dimmed">
-            Username: testuser | Password: 8989
-          </Text>
-        </Group>
       </Stack>
     </Paper>
   );

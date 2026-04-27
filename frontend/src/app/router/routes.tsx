@@ -54,6 +54,13 @@ const SalesOrderEditPage = React.lazy(() =>
 const FinancialDashboard = React.lazy(() =>
   import('@features/financial/pages/FinancialDashboard')
 );
+const ManagerUsersPage = React.lazy(() => import('@features/manager/pages/ManagerUsersPage'));
+const ManagerUserCreatePage = React.lazy(() =>
+  import('@features/manager/pages/ManagerUserCreatePage')
+);
+const ManagerUserEditPage = React.lazy(() =>
+  import('@features/manager/pages/ManagerUserEditPage')
+);
 
 const AppShell = React.lazy(() => import('@components/layout/AppShell'));
 
@@ -153,6 +160,30 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.financial,
         element: <FinancialDashboard />,
+      },
+      {
+        path: ROUTES.managerUsers,
+        element: (
+          <ProtectedRoute requireSuperuser>
+            <ManagerUsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.managerUserNew,
+        element: (
+          <ProtectedRoute requireSuperuser>
+            <ManagerUserCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/manager/users/:id/edit',
+        element: (
+          <ProtectedRoute requireSuperuser>
+            <ManagerUserEditPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

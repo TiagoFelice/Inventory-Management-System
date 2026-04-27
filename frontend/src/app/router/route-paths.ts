@@ -20,4 +20,7 @@ export const ROUTES = {
   salesOrderDetail: (id: number | string) => `/sales-orders/${id}`,
   salesOrderEdit: (id: number | string) => `/sales-orders/${id}/edit`,
   financial: '/financial',
+  managerUsers: '/manager/users',
+  managerUserNew: '/manager/users/new',
+  managerUserEdit: (id: number | string) => `/manager/users/${id}/edit`,
 } as const;

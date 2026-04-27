@@ -10,11 +10,13 @@ import {
   Group,
 } from '@mantine/core';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthContext } from '@/features/auth/auth-context';
 import { NAV_ITEMS } from '@/shared/constants/navigation';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSuperuser } = useAuthContext();
 
   return (
     <ScrollArea style={{ height: 'calc(100vh - 60px)' }}>
@@ -31,7 +33,7 @@ const Sidebar: React.FC = () => {
         <Divider my="lg" />
 
         <Stack gap={8}>
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => !item.superuserOnly || isSuperuser).map((item) => {
             const Icon = item.icon;
             const isActive =
               location.pathname === item.href ||

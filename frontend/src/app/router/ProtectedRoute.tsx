@@ -1,36 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader, Center } from '@mantine/core';
-import { authStorage } from '@/lib/storage/auth-storage';
+import { useAuthContext } from '@/features/auth/auth-context';
 import { ROUTES } from './route-paths';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireSuperuser?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = authStorage.getAccessToken();
-      setIsAuthenticated(!!token);
-      setIsLoading(false);
-    };
-
-    checkAuth();
-
-    window.addEventListener('storage', checkAuth);
-    window.addEventListener('auth:changed', checkAuth);
-    window.addEventListener('auth:unauthorized', checkAuth);
-
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth:changed', checkAuth);
-      window.removeEventListener('auth:unauthorized', checkAuth);
-    };
-  }, []);
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requireSuperuser = false,
+}) => {
+  const { isLoading, isAuthenticated, isSuperuser } = useAuthContext();
 
   if (isLoading) {
     return (
@@ -42,6 +25,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.login} replace />;
+  }
+
+  if (requireSuperuser && !isSuperuser) {
+    return <Navigate to={ROUTES.dashboard} replace />;
   }
 
   return <>{children}</>;
